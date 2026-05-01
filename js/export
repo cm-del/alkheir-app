@@ -1,0 +1,30 @@
+'use strict';
+const Export = {
+    async toCSV() {
+        const bids = await App.getBatchIds();
+        const batches = await db.batches.where('id').anyOf(bids).toArray();
+        let csv = '\uFEFFالدفعة,طيور,تاريخ,عمر,وزن,علف,نفوق,مبيعات\n';
+        for (const b of batches) {
+            const lw = (await db.weights.where('batchId').equals(b.id).reverse().sortBy('date'))[0];
+            const fKg = (await db.feed.where('batchId').equals(b.id).toArray()).reduce((s,x)=>s+x.qty,0);
+            const dc = (await db.deaths.where('batchId').equals(b.id).toArray()).reduce((s,d)=>s+d.count,0);
+            const sl = (await db.sales.where('batchId').equals(b.id).toArray()).reduce((s,x)=>s+x.total,0);
+            csv += `${b.name},${b.count},${b.date},${Utils.dAge(b.date)},${lw?lw.weight:0},${(fKg/KPB).toFixed(1)},${dc},${Math.round(sl)}\n`;
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+        a.download = 'alkheir.csv';
+        a.click();
+    },
+    async toPDF() {
+        const win = window.open('', '_blank');
+        if (!win) return alert('السماح بالنوافذ المنبثقة');
+        const bids = await App.getBatchIds();
+        const batches = await db.batches.where('id').anyOf(bids).toArray();
+        let html = '<html dir="rtl"><head><meta charset="UTF-8"><style>table{width:100%}th{background:#00803f;color:#fff}td{border:1px solid #ddd}</style></head><body><h1>تقرير الخير</h1><table><tr><th>دفعة</th><th>طيور</th><th>عمر</th></tr>';
+        batches.forEach(b => { html += `<tr><td>${b.name}</td><td>${b.count}</td><td>${Utils.dAge(b.date)} يوم</td></tr>`; });
+        html += '</table></body></html>';
+        win.document.write(html);
+        win.print();
+    }
+};
