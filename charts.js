@@ -1,0 +1,28 @@
+'use strict';
+const Charts = {
+    renderGrowthChart(canvasId, batchesData) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+        const colors = ['#00e272', '#ffb703', '#38b6ff'];
+        const datasets = batchesData.map((b, i) => ({
+            label: b.name,
+            data: b.weights.map(w => ({ x: w.age, y: w.weight })),
+            borderColor: colors[i % 3],
+            tension: 0.4,
+            pointRadius: 3
+        }));
+        new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#dff5e8' } } },
+                scales: {
+                    x: { ticks: { color: '#4a7a5e' }, grid: { color: '#1c3424' } },
+                    y: { ticks: { color: '#4a7a5e' }, grid: { color: '#1c3424' } }
+                }
+            }
+        });
+    }
+};
