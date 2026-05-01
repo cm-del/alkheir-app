@@ -1,0 +1,30 @@
+'use strict';
+const Analytics = {
+    async predictWeight(batchId) {
+        const b = await db.batches.get(batchId);
+        if (!b) return null;
+        const weights = await db.weights.where('batchId').equals(batchId).toArray();
+        if (weights.length < 3) return null;
+        const ages = weights.map(w => Utils.dAge(b.date) - Utils.dAge(w.date));
+        const vals = weights.map(w => w.weight);
+        const n = ages.length;
+        const sumX = ages.reduce((a,b)=>a+b,0);
+        const sumY = vals.reduce((a,b)=>a+b,0);
+        const sumXY = ages.reduce((s,x,i) => s + x*vals[i], 0);
+        const sumX2 = ages.reduce((s,x) => s + x*x, 0);
+        const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+        const intercept = (sumY - slope*sumX) / n;
+        return { slope, intercept, predict(age) { return +(intercept + slope*age).toFixed(3); } };
+    },
+    async predictBestSellDate(batchId, targetWeight = 2.5) {
+        const model = await this.predictWeight(batchId);
+        if (!model || model.slope <= 0) return null;
+        const b = await db.batches.get(batchId);
+        if (!b) return null;
+        const currentAge = Utils.dAge(b.date);
+        const daysNeeded = Math.max(0, Math.ceil((targetWeight - model.intercept) / model.slope));
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + (daysNeeded - currentAge));
+        return { date: targetDate.toISOString().split('T')[0], daysNeeded, model };
+    }
+};
