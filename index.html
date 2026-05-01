@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="theme-color" content="#0e1f14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>الخير للدواجن</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
+</head>
+<body>
+    <!-- PIN Screen -->
+    <div id="pin-screen" style="display:flex;position:fixed;inset:0;z-index:9999;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:14px">
+        <div class="logo-box" style="width:64px;height:64px;font-size:32px">🐔</div>
+        <div class="app-name" style="font-size:1.2rem">الخير للدواجن</div>
+        <input type="password" id="pin-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="أدخل الـ PIN" style="background:var(--surface);border:1px solid var(--a);border-radius:12px;color:var(--text);font-size:1.4rem;padding:12px 18px;text-align:center;width:160px;letter-spacing:8px;outline:none;font-family:'Cairo'">
+        <button class="btn btn-g" style="width:160px" onclick="verifyPin()">🔓 دخول</button>
+        <small id="pin-msg" style="color:var(--danger);display:none">PIN غير صحيح</small>
+        <small style="color:var(--muted);margin-top:20px">الافتراضي: 0000</small>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9000;display:flex;flex-direction:column;gap:6px;align-items:center"></div>
+
+    <!-- Confirm Modal -->
+    <div class="mo" id="modal-confirm">
+        <div class="modal">
+            <div class="mhdr"><div class="mtitle">⚠️ تأكيد</div><button class="mx" onclick="closeModal('confirm')">✕</button></div>
+            <div id="confirm-msg" style="margin-bottom:12px;font-size:.85rem"></div>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-r" id="confirm-yes">🗑 نعم</button>
+                <button class="btn" style="background:var(--surface);color:var(--text)" onclick="closeModal('confirm')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="hdr">
+        <div style="display:flex;align-items:center;gap:10px">
+            <div class="logo-box">🐔</div>
+            <div><div class="app-name">الخير للدواجن</div><div class="app-sub" id="hdrDate"></div></div>
+        </div>
+        <div class="hdr-r">
+            <div class="chip" onclick="showWeatherModal()">🌡 <span id="hdrTemp"><span class="spinner"></span></span></div>
+            <div class="chip" onclick="openModal('export')">📤</div>
+            <div class="chip" onclick="openModal('settings')">⚙️</div>
+        </div>
+    </header>
+    <div class="fbar" id="farmBar"></div>
+    <div class="hb" id="hangarBar"></div>
+
+    <div id="page-dash" class="page active">
+        <div id="alertZone"></div>
+        <div class="qabar" id="quickActions"></div>
+        <div id="wxWidget"></div>
+        <div class="sg" id="dashStats"></div>
+        <div class="card"><div class="card-title">💰 الملخص المالي</div><div class="g2" style="margin-bottom:9px"><div><div style="font-size:.66rem;color:var(--muted)">مبيعات</div><div style="font-size:1rem;font-weight:900;color:var(--a)" id="dInc">--</div></div><div><div style="font-size:.66rem;color:var(--muted)">مصاريف</div><div style="font-size:1rem;font-weight:900;color:var(--danger)" id="dExp">--</div></div></div><div class="sep"></div><div style="font-size:.68rem;color:var(--muted);margin-top:8px">صافي الربح</div><div style="font-size:1.3rem;margin-top:2px" id="dProfit">--</div></div>
+        <div class="sec-t">🐔 الدفعات النشطة</div><div id="dashBatches"></div>
+    </div>
+    <div id="page-hangars" class="page"><div class="sec-t">🏡 المزارع والعنابر</div><div id="farmTree"></div></div>
+    <div id="page-store" class="page"><div class="sec-t">🌾 مخزن العلف</div><div id="storeContent"></div></div>
+    <div id="page-data" class="page">
+        <div class="itabs" id="dataTabs"><button class="it active" onclick="switchDTab('w',this)">⚖️ أوزان</button><button class="it" onclick="switchDTab('f',this)">🌾 علف</button><button class="it" onclick="switchDTab('d',this)">💀 نفوق</button><button class="it" onclick="switchDTab('s',this)">💰 مبيعات</button><button class="it" onclick="switchDTab('e',this)">📋 مصاريف</button><button class="it" onclick="switchDTab('st',this)">👥 عمالة</button></div>
+        <div id="dataContent"></div>
+    </div>
+    <div id="page-temp" class="page">
+        <div class="itabs"><button class="it active" onclick="switchTTab('log',this)">🌡 سجل الحرارة</button><button class="it" onclick="switchTTab('vent',this)">💨 التهوية</button></div>
+        <div id="tempContent"></div>
+    </div>
+    <div id="page-ref" class="page">
+        <div class="itabs"><button class="it active" onclick="switchRefTab('disease',this)">🦠 أمراض</button><button class="it" onclick="switchRefTab('analytics',this)">📊 تحليلات</button></div>
+        <div id="refContent"></div>
+    </div>
+    <div id="page-more" class="page">
+        <div class="itabs"><button class="it active" onclick="switchMoreTab('photos',this)">📷 صور</button><button class="it" onclick="switchMoreTab('agenda',this)">📅 أجندة</button><button class="it" onclick="switchMoreTab('clients',this)">👥 عملاء</button><button class="it" onclick="switchMoreTab('market',this)">📈 أسعار</button></div>
+        <div id="moreContent"></div>
+    </div>
+
+    <nav class="bnav">
+        <button class="ni active" onclick="showPage('dash',this)"><span class="ni-i">📊</span>الرئيسية</button>
+        <button class="ni" onclick="showPage('hangars',this)"><span class="ni-i">🏚</span>العنابر</button>
+        <button class="ni" onclick="showPage('store',this)"><span class="ni-i">🌾</span>المخزن</button>
+        <button class="ni" onclick="showPage('data',this)"><span class="ni-i">📋</span>البيانات</button>
+        <button class="ni" onclick="showPage('temp',this)"><span class="ni-i">🌡</span>الحرارة</button>
+        <button class="ni" onclick="showPage('ref',this)"><span class="ni-i">📚</span>المرجع</button>
+        <button class="ni" onclick="showPage('more',this)"><span class="ni-i">➕</span>المزيد</button>
+    </nav>
+
+    <!-- Modals (same as original, with minor additions) -->
+    <div class="mo" id="modal-addFarm"><div class="modal"><div class="mhdr"><div class="mtitle">🏡 مزرعة جديدة</div><button class="mx" onclick="closeModal('addFarm')">✕</button></div><div class="fg"><label>الاسم *</label><input id="fm-name" maxlength="60"></div><div class="fg"><label>الموقع</label><input id="fm-loc" maxlength="100"></div><button class="btn btn-g" onclick="addFarm()">✅ إضافة</button></div></div>
+    <div class="mo" id="modal-editFarm"><div class="modal"><div class="mhdr"><div class="mtitle">✏️ تعديل</div><button class="mx" onclick="closeModal('editFarm')">✕</button></div><input type="hidden" id="ef-id"><div class="fg"><label>الاسم</label><input id="ef-name" maxlength="60"></div><div class="fg"><label>الموقع</label><input id="ef-loc" maxlength="100"></div><button class="btn btn-g" onclick="updateFarm()">💾 حفظ</button><button class="btn btn-r" style="margin-top:6px" onclick="delWithConfirm('farm')">🗑 حذف</button></div></div>
+    <div class="mo" id="modal-addHangar"><div class="modal"><div class="mhdr"><div class="mtitle">🏠 عنبر جديد</div><button class="mx" onclick="closeModal('addHangar')">✕</button></div><div class="fg"><label>الاسم *</label><input id="hn-name" maxlength="60"></div><div class="g2"><div class="fg"><label>السعة</label><input type="number" id="hn-cap" min="0"></div><div class="fg"><label>المساحة م²</label><input type="number" id="hn-area" min="0"></div></div><div class="g2"><div class="fg"><label>شبابيك</label><input type="number" id="hn-win" min="0"></div><div class="fg"><label>شفاطات</label><input type="number" id="hn-fans" min="0"></div></div><div class="fg"><label>قدرة الشفاطة م³/س</label><input type="number" id="hn-fcap" min="0"></div><button class="btn btn-g" onclick="addHangar()">✅ إضافة</button></div></div>
+    <div class="mo" id="modal-editHangar"><div class="modal"><div class="mhdr"><div class="mtitle">✏️ تعديل</div><button class="mx" onclick="closeModal('editHangar')">✕</button></div><input type="hidden" id="eh-id"><div class="fg"><label>الاسم</label><input id="eh-name" maxlength="60"></div><div class="g2"><div class="fg"><label>السعة</label><input type="number" id="eh-cap" min="0"></div><div class="fg"><label>المساحة</label><input type="number" id="eh-area" min="0"></div></div><div class="g2"><div class="fg"><label>شبابيك</label><input type="number" id="eh-win" min="0"></div><div class="fg"><label>شفاطات</label><input type="number" id="eh-fans" min="0"></div></div><div class="fg"><label>قدرة الشفاطة</label><input type="number" id="eh-fcap" min="0"></div><button class="btn btn-g" onclick="updateHangar()">💾 حفظ</button><button class="btn btn-r" style="margin-top:6px" onclick="delWithConfirm('hangar')">🗑 حذف</button></div></div>
+    <div class="mo" id="modal-addBatch"><div class="modal"><div class="mhdr"><div class="mtitle">🐣 دفعة جديدة</div><button class="mx" onclick="closeModal('addBatch')">✕</button></div><div class="fg"><label>الاسم *</label><input id="bt-name" maxlength="60"></div><div class="g2"><div class="fg"><label>العدد *</label><input type="number" id="bt-count" min="1"></div><div class="fg"><label>التاريخ *</label><input type="date" id="bt-date"></div></div><div class="g2"><div class="fg"><label>سعر الكتكوت</label><input type="number" id="bt-price" min="0" step="0.5"></div><div class="fg"><label>الوزن المستهدف</label><input type="number" id="bt-target" min="0.1" step="0.1" value="2.5"></div></div><button class="btn btn-g" onclick="addBatch()">✅ إضافة</button></div></div>
+    <div class="mo" id="modal-addWeight"><div class="modal"><div class="mhdr"><div class="mtitle">⚖️ تسجيل وزن</div><button class="mx" onclick="closeModal('addWeight')">✕</button></div><div class="fg"><label>الدفعة *</label><select id="wt-b"></select></div><div class="g2"><div class="fg"><label>الوزن *</label><input type="number" id="wt-w" min="0.01" step="0.01"></div><div class="fg"><label>التاريخ</label><input type="date" id="wt-d"></div></div><div class="fg"><label>ملاحظة</label><input id="wt-note" maxlength="200"></div><button class="btn btn-g" onclick="saveWeight()">✅ حفظ</button></div></div>
+    <div class="mo" id="modal-addFeed"><div class="modal"><div class="mhdr"><div class="mtitle">🌾 صرف علف</div><button class="mx" onclick="closeModal('addFeed')">✕</button></div><div class="fg"><label>الدفعة *</label><select id="fd-b" onchange="showFeedStock()"></select></div><div id="fd-stock-info" style="font-size:.75rem;margin-bottom:8px"></div><div class="g2"><div class="fg"><label>الشيكاير *</label><input type="number" id="fd-bags" min="0.5" step="0.5" oninput="calcFeedKg()"><div class="hint" id="fd-kg">0 كجم</div></div><div class="fg"><label>النوع</label><select id="fd-type"><option>بادي</option><option>نامي</option><option>ناهي</option></select></div></div><div class="fg"><label>التاريخ</label><input type="date" id="fd-d"></div><button class="btn btn-g" onclick="saveFeed()">✅ صرف</button></div></div>
+    <div class="mo" id="modal-addDeath"><div class="modal"><div class="mhdr"><div class="mtitle">💀 تسجيل نفوق</div><button class="mx" onclick="closeModal('addDeath')">✕</button></div><div class="fg"><label>الدفعة *</label><select id="dt-b" onchange="showDeathToday()"></select></div><div id="dt-today" style="font-size:.75rem;margin-bottom:8px"></div><div class="g2"><div class="fg"><label>العدد *</label><input type="number" id="dt-cnt" min="1"></div><div class="fg"><label>التاريخ</label><input type="date" id="dt-d"></div></div><div class="fg"><label>الفترة</label><select id="dt-per"><option value="morning">🌅 صباح</option><option value="afternoon">☀️ نهار</option><option value="night">🌙 ليل</option></select></div><div class="fg"><label>السبب</label><select id="dt-rsn"><option>مرض</option><option>إجهاد حراري</option><option>كسر/حوادث</option><option>غير معروف</option><option>أخرى</option></select></div><button class="btn btn-r" onclick="saveDeath()">⚠️ تسجيل</button></div></div>
+    <div class="mo" id="modal-addSale"><div class="modal"><div class="mhdr"><div class="mtitle">💰 تسجيل بيع</div><button class="mx" onclick="closeModal('addSale')">✕</button></div><div class="fg"><label>الدفعة *</label><select id="sl-b"></select></div><div class="g2"><div class="fg"><label>العدد *</label><input type="number" id="sl-cnt" min="1" oninput="calcSale()"></div><div class="fg"><label>متوسط الوزن</label><input type="number" id="sl-w" min="0" step="0.01" oninput="calcSale()"></div></div><div class="g2"><div class="fg"><label>سعر الكيلو *</label><input type="number" id="sl-price" min="0.5" step="0.5" oninput="calcSale()"></div><div class="fg"><label>التاريخ</label><input type="date" id="sl-d"></div></div><div class="fg"><label>الإجمالي</label><input type="number" id="sl-total" readonly style="opacity:.6;font-weight:900"></div><button class="btn btn-o" onclick="saveSale()">✅ تسجيل</button></div></div>
+    <div class="mo" id="modal-addExpense"><div class="modal"><div class="mhdr"><div class="mtitle">📋 مصروف</div><button class="mx" onclick="closeModal('addExpense')">✕</button></div><div class="fg"><label>النوع</label><select id="ex-type"><option>دواء/لقاح</option><option>كهرباء</option><option>عمالة</option><option>صيانة</option><option>مواد تنظيف</option><option>شحن/نقل</option><option>أخرى</option></select></div><div class="g2"><div class="fg"><label>المبلغ *</label><input type="number" id="ex-amt" min="0.5" step="0.5"></div><div class="fg"><label>التاريخ</label><input type="date" id="ex-d"></div></div><div class="fg"><label>الدفعة (اختياري)</label><select id="ex-b"><option value="">عام</option></select></div><div class="fg"><label>ملاحظة</label><input id="ex-note" maxlength="200"></div><button class="btn btn-g" onclick="saveExpense()">✅ إضافة</button></div></div>
+    <div class="mo" id="modal-addStaff"><div class="modal"><div class="mhdr"><div class="mtitle">👤 موظف</div><button class="mx" onclick="closeModal('addStaff')">✕</button></div><div class="fg"><label>الاسم *</label><input id="st-name" maxlength="60"></div><div class="g2"><div class="fg"><label>الدور</label><select id="st-role"><option>عامل</option><option>مهندس</option><option>مشرف</option><option>سائق</option></select></div><div class="fg"><label>بدل/جمعة</label><input type="number" id="st-allow" min="0"></div></div><div class="fg"><label>سلفة/جمعة</label><input type="number" id="st-adv" min="0"></div><div class="fg"><label>تاريخ التعيين</label><input type="date" id="st-start"></div><button class="btn btn-g" onclick="saveStaff()">✅ إضافة</button></div></div>
+    <div class="mo" id="modal-addTemp"><div class="modal"><div class="mhdr"><div class="mtitle">🌡 تسجيل حرارة</div><button class="mx" onclick="closeModal('addTemp')">✕</button></div><div class="fg"><label>العنبر *</label><select id="tl-h" onchange="showIdealTemp()"></select></div><div id="tl-ideal" style="font-size:.75rem;margin-bottom:8px"></div><div class="g2"><div class="fg"><label>الحرارة °C *</label><input type="number" id="tl-t" step="0.1"></div><div class="fg"><label>الرطوبة %</label><input type="number" id="tl-hum" min="0" max="100"></div></div><div class="g2"><div class="fg"><label>التاريخ</label><input type="date" id="tl-d"></div><div class="fg"><label>الوقت</label><input type="time" id="tl-time"></div></div><div class="fg"><label>ملاحظة</label><input id="tl-note" maxlength="200"></div><button class="btn btn-g" onclick="saveTempLog()">✅ تسجيل</button></div></div>
+    <div class="mo" id="modal-storeIn"><div class="modal"><div class="mhdr"><div class="mtitle">📦 استلام علف</div><button class="mx" onclick="closeModal('storeIn')">✕</button></div><div class="g2"><div class="fg"><label>الشيكاير *</label><input type="number" id="si-bags" min="1" oninput="calcStoreKg()"><div class="hint" id="si-kg">0 كجم</div></div><div class="fg"><label>النوع</label><select id="si-type"><option>بادي</option><option>نامي</option><option>ناهي</option><option>مختلط</option></select></div></div><div class="g2"><div class="fg"><label>سعر الطن</label><input type="number" id="si-price" min="0"></div><div class="fg"><label>التاريخ</label><input type="date" id="si-d"></div></div><div class="fg"><label>ملاحظة</label><input id="si-note" maxlength="200"></div><button class="btn btn-g" onclick="saveStoreIn()">✅ إضافة</button></div></div>
+    <div class="mo" id="modal-addPhoto"><div class="modal"><div class="mhdr"><div class="mtitle">📷 صورة</div><button class="mx" onclick="closeModal('addPhoto')">✕</button></div><div class="fg"><label>تصنيف</label><select id="ph-cat"><option>عام</option><option>نفوق</option><option>مرض</option><option>نمو</option><option>علف</option><option>عنبر</option></select></div><div class="fg"><label>دفعة</label><select id="ph-b"><option value="">---</option></select></div><div class="fg"><label>ملاحظة</label><input id="ph-note" maxlength="200"></div><label style="display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--surface);border:2px dashed var(--border);border-radius:12px;padding:20px;cursor:pointer;margin:10px 0" onclick="document.getElementById('ph-file').click()"><span style="font-size:2rem">📷</span><span style="font-size:.8rem;color:var(--muted)">اختر صورة</span></label><input type="file" id="ph-file" accept="image/*" capture="environment" style="display:none" onchange="previewPhoto(this)"><div id="ph-preview" style="display:none;margin-bottom:10px"><img id="ph-img" style="width:100%;border-radius:10px;max-height:200px;object-fit:cover"></div><button class="btn btn-g" onclick="savePhoto()">✅ حفظ</button></div></div>
+    <div class="mo" id="modal-client"><div class="modal"><div class="mhdr"><div class="mtitle">👤 عميل</div><button class="mx" onclick="closeModal('client')">✕</button></div><div class="fg"><label>الاسم *</label><input id="cl-name" maxlength="60"></div><div class="fg"><label>الهاتف</label><input id="cl-phone" maxlength="20"></div><button class="btn btn-g" onclick="saveClient()">✅ إضافة</button></div></div>
+    <div class="mo" id="modal-clientSale"><div class="modal"><div class="mhdr"><div class="mtitle">💰 بيع آجل</div><button class="mx" onclick="closeModal('clientSale')">✕</button></div><div class="fg"><label>العميل *</label><select id="cs-client"></select></div><div class="fg"><label>المبلغ *</label><input type="number" id="cs-amt" min="1"></div><div class="fg"><label>التاريخ</label><input type="date" id="cs-date"></div><button class="btn btn-o" onclick="saveClientSale()">✅ تسجيل</button></div></div>
+    <div class="mo" id="modal-marketPrice"><div class="modal"><div class="mhdr"><div class="mtitle">📈 سعر سوق</div><button class="mx" onclick="closeModal('marketPrice')">✕</button></div><div class="fg"><label>النوع</label><select id="mp-type"><option>كتكوت</option><option>علف</option><option>بيع</option></select></div><div class="fg"><label>السعر</label><input type="number" id="mp-price" min="0.5" step="0.5"></div><div class="fg"><label>التاريخ</label><input type="date" id="mp-date"></div><button class="btn btn-g" onclick="saveMarketPrice()">✅ حفظ</button></div></div>
+    <div class="mo" id="modal-agenda"><div class="modal"><div class="mhdr"><div class="mtitle">📅 موعد</div><button class="mx" onclick="closeModal('agenda')">✕</button></div><div class="fg"><label>النوع</label><select id="ag-type"><option>تحصين</option><option>تغيير علف</option><option>بيع متوقع</option><option>أخرى</option></select></div><div class="fg"><label>التاريخ</label><input type="date" id="ag-date"></div><div class="fg"><label>ملاحظة</label><input id="ag-note" maxlength="200"></div><button class="btn btn-g" onclick="saveAgenda()">✅ حفظ</button></div></div>
+    <div class="mo" id="modal-weather"><div class="modal"><div class="mhdr"><div class="mtitle">🌡 الطقس</div><button class="mx" onclick="closeModal('weather')">✕</button></div><div class="fg"><label>المنطقة</label><select id="wx-region" onchange="changeRegion()"><option value="30.06,31.25">القاهرة</option><option value="31.20,29.90">الإسكندرية</option><option value="30.60,30.99">المنوفية</option><option value="30.75,31.72">الشرقية</option><option value="31.07,31.38">الدقهلية</option><option value="29.31,30.84">الفيوم</option><option value="27.19,31.19">أسيوط</option></select></div><div id="wxContent"><div class="empty"><span class="spinner"></span> جاري التحميل...</div></div></div></div>
+    <div class="mo" id="modal-export"><div class="modal"><div class="mhdr"><div class="mtitle">📤 تصدير واستيراد</div><button class="mx" onclick="closeModal('export')">✕</button></div><div class="sec-t">📤 تصدير</div><div class="exp-row"><button class="exp-btn" onclick="exportJSON()">📄 JSON كامل</button><button class="exp-btn" onclick="exportCSV()">📊 CSV</button><button class="exp-btn" onclick="exportPDF()">🖨 PDF</button></div><div class="sec-t">📥 استيراد</div><label style="display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--surface);border:2px dashed var(--a);border-radius:12px;padding:16px;cursor:pointer;margin-top:8px" onclick="document.getElementById('import-file').click()"><span style="font-size:1.6rem">📥</span><span style="font-size:.78rem;color:var(--muted)">اختر ملف JSON لاستيراد</span></label><input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)"><div id="import-status" style="margin-top:8px;font-size:.75rem"></div></div></div>
+    <div class="mo" id="modal-settings"><div class="modal"><div class="mhdr"><div class="mtitle">⚙️ الإعدادات</div><button class="mx" onclick="closeModal('settings')">✕</button></div><div class="fg"><label>تغيير PIN</label><input type="password" id="set-pin" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="PIN جديد"></div><button class="btn btn-g" onclick="changePin()">💾 حفظ الـ PIN</button><div class="sep"></div><button class="btn btn-r" onclick="resetAllData()">⚠️ مسح كل البيانات</button></div></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
