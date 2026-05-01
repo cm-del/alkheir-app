@@ -7,6 +7,8 @@
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <!-- Toastify للإشعارات -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body>
@@ -18,6 +20,7 @@
         <div class="hdr-r">
             <div class="chip" onclick="Modals.showWeather()">🌡 <span id="hdrTemp">--°</span></div>
             <div class="chip" onclick="Modals.showExport()">📤</div>
+            <div class="chip" onclick="UI.toggleLock()">🔒</div>
         </div>
     </header>
     <div class="fbar" id="farmBar"></div>
@@ -34,7 +37,64 @@
             <button class="it" onclick="UI.switchDTab('s',this)">💰 مبيعات</button>
             <button class="it" onclick="UI.switchDTab('e',this)">📋 مصاريف</button>
             <button class="it" onclick="UI.switchDTab('st',this)">👥 عمالة</button>
+            <button class="it" onclick="UI.switchDTab('cmp',this)">🔄 مقارنة</button>
         </div>
+        <div id="dataContent"></div>
+    </div>
+    <div id="page-temp" class="page">
+        <div class="itabs">
+            <button class="it active" onclick="UI.switchTTab('log',this)">🌡 سجل الحرارة</button>
+            <button class="it" onclick="UI.switchTTab('vent',this)">💨 التهوية</button>
+        </div>
+        <div id="tempContent"></div>
+    </div>
+    <div id="page-ref" class="page">
+        <div class="itabs">
+            <button class="it active" onclick="UI.switchRefTab('disease',this)">🦠 أمراض</button>
+            <button class="it" onclick="UI.switchRefTab('analytics',this)">📊 تحليلات</button>
+        </div>
+        <div id="refContent"></div>
+    </div>
+    <div id="page-more" class="page">
+        <div class="itabs">
+            <button class="it active" onclick="UI.switchMoreTab('photos',this)">📷 صور</button>
+            <button class="it" onclick="UI.switchMoreTab('agenda',this)">📅 أجندة</button>
+            <button class="it" onclick="UI.switchMoreTab('clients',this)">👥 عملاء</button>
+            <button class="it" onclick="UI.switchMoreTab('market',this)">📈 أسعار</button>
+            <button class="it" onclick="UI.switchMoreTab('backup',this)">💾 نسخ احتياطي</button>
+        </div>
+        <div id="moreContent"></div>
+    </div>
+
+    <nav class="bnav">
+        <button class="ni active" onclick="App.showPage('dash',this)"><span class="ni-i">📊</span>الرئيسية</button>
+        <button class="ni" onclick="App.showPage('hangars',this)"><span class="ni-i">🏚</span>العنابر</button>
+        <button class="ni" onclick="App.showPage('store',this)"><span class="ni-i">🌾</span>المخزن</button>
+        <button class="ni" onclick="App.showPage('data',this)"><span class="ni-i">📋</span>البيانات</button>
+        <button class="ni" onclick="App.showPage('temp',this)"><span class="ni-i">🌡</span>الحرارة</button>
+        <button class="ni" onclick="App.showPage('ref',this)"><span class="ni-i">📚</span>المرجع</button>
+        <button class="ni" onclick="App.showPage('more',this)"><span class="ni-i">➕</span>المزيد</button>
+    </nav>
+
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/modals.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>        </div>
         <div id="dataContent"></div>
     </div>
     <div id="page-temp" class="page">
