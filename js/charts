@@ -53,5 +53,36 @@ const Charts = {
                 }
             }
         });
+    },
+    // رسم بياني لاستهلاك العلف
+    renderFeedChart(canvasId, feedData) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+        const sorted = feedData.sort((a, b) => a.date.localeCompare(b.date));
+        const labels = sorted.map(f => f.date.slice(5)); // MM-DD
+        const kgData = sorted.map(f => f.qty || 0);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'علف مستهلك (كجم)',
+                    data: kgData,
+                    backgroundColor: '#00e27233',
+                    borderColor: '#00e272',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#dff5e8' } } },
+                scales: {
+                    x: { ticks: { color: '#4a7a5e' }, grid: { color: '#1c3424' } },
+                    y: { ticks: { color: '#4a7a5e' }, grid: { color: '#1c3424' } }
+                }
+            }
+        });
     }
 }; 
