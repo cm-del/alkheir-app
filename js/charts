@@ -24,5 +24,34 @@ const Charts = {
                 }
             }
         });
+    },
+    renderTempChart(canvasId, tempLogs) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+        const labels = tempLogs.map(t => t.date.slice(5) + ' ' + t.time);
+        const data = tempLogs.map(t => t.temp);
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'درجة الحرارة °C',
+                    data,
+                    borderColor: '#ffb703',
+                    backgroundColor: 'rgba(255,183,3,0.1)',
+                    tension: 0.3,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#dff5e8' } } },
+                scales: {
+                    x: { ticks: { color: '#4a7a5e' }, grid: { color: '#1c3424' } },
+                    y: { ticks: { color: '#4a7a5e' }, grid: { color: '#1c3424' } }
+                }
+            }
+        });
     }
-};
+}; 
