@@ -1,4 +1,4 @@
-const CACHE = 'alkheir-v1';
+const CACHE = 'alkheir-v2';
 const ASSETS = [
     '/',
     'index.html',
@@ -13,7 +13,9 @@ const ASSETS = [
     'js/ui.js',
     'js/app.js',
     'https://unpkg.com/dexie@3.2.4/dist/dexie.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'
+    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/toastify-js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
 ];
 
 self.addEventListener('install', event => {
@@ -24,6 +26,12 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
     event.respondWith(
-        caches.match(event.request).then(cached => cached || fetch(event.request))
+        caches.match(event.request).then(cached => {
+            return cached || fetch(event.request).catch(() => {
+                if (event.request.mode === 'navigate') {
+                    return caches.match('index.html');
+                }
+            });
+        })
     );
-});
+}); 
