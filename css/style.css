@@ -1019,4 +1019,44 @@ tr:last-child td {
     border-radius: 12px;
     border: 1px solid var(--border);
     text-align: center;
+}
+
+/* ========== تأثير السحب للحذف ========== */
+.swipe-container {
+    position: relative;
+    overflow: hidden;
+}
+.swipe-row {
+    position: relative;
+    z-index: 2;
+    transition: transform 0.2s ease;
+    touch-action: pan-y;
+    background: var(--card);
+}
+.swipe-delete-btn {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background: var(--danger);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    border-radius: 0 var(--r) var(--r) 0;
+    cursor: pointer;
+    z-index: 1;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+}
+.swipe-delete-btn.active {
+    transform: translateX(0);
+}
+
+@media (hover: hover) {
+    .swipe-row:hover .swipe-delete-btn {
+        transform: translateX(0);
     }
+        } 
