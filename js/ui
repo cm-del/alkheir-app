@@ -8,7 +8,6 @@ const UI = {
         const kg = Math.max(0, i - o);
         return { kg, bags: kg / KPB };
     },
-
     async fillBatchSelect(selectId, includeEmpty = false) {
         const sel = document.getElementById(selectId);
         if (!sel) return;
@@ -27,7 +26,6 @@ const UI = {
             sel.innerHTML += `<option value="${b.id}">${b.name}</option>`;
         });
     },
-
     async fillHangarSelect(selectId) {
         const sel = document.getElementById(selectId);
         if (!sel) return;
@@ -39,7 +37,6 @@ const UI = {
             sel.innerHTML += `<option value="${h.id}">${h.name}</option>`;
         });
     },
-
     async updateFeedStockInfo() {
         const bid = document.getElementById('fd-b')?.value;
         if (!bid) return;
@@ -53,7 +50,6 @@ const UI = {
             info.innerHTML = `<span style="color:${stock.bags < 10 ? 'var(--danger)' : 'var(--a)'}">🌾 المخزن: ${stock.bags.toFixed(1)} شيكارة</span>`;
         }
     },
-
     async showDeathTodayInfo() {
         const bid = document.getElementById('dt-b')?.value;
         const d = Utils.todayS();
@@ -65,7 +61,6 @@ const UI = {
         const sum = tds.reduce((s, x) => s + x.count, 0);
         el.innerHTML = `<span style="color:var(--danger)">نفوق اليوم: <b>${sum}</b></span>`;
     },
-
     calcSaleTotal() {
         const cnt = +document.getElementById('sl-cnt')?.value || 0;
         const w = +document.getElementById('sl-w')?.value || 0;
@@ -73,7 +68,6 @@ const UI = {
         const total = document.getElementById('sl-total');
         if (total) total.value = Math.round(cnt * w * price);
     },
-
     async showIdealTempInfo() {
         const hid = document.getElementById('tl-h')?.value;
         const el = document.getElementById('tl-ideal');
@@ -85,7 +79,6 @@ const UI = {
         const rec = Utils.idealRec(avg);
         el.innerHTML = `<span style="color:var(--a)">المثالي لعمر ${avg} يوم: ${rec.mn}–${rec.mx}°</span>`;
     },
-
     previewPhoto(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -99,6 +92,65 @@ const UI = {
             };
             reader.readAsDataURL(input.files[0]);
         }
+    },
+
+    // ========== إيماءة السحب للحذف (Swipe to Delete) ==========
+    enableSwipeToDelete(containerSelector, deleteCallback) {
+        const container = document.querySelector(containerSelector);
+        if (!container) return;
+        const rows = container.querySelectorAll('tr');
+        rows.forEach(row => {
+            // تغليف الصف في swipe-container إذا لم يكن كذلك
+            if (!row.parentElement.classList.contains('swipe-container')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'swipe-container';
+                const deleteBtn = document.createElement('div');
+                deleteBtn.className = 'swipe-delete-btn';
+                deleteBtn.innerHTML = '🗑️';
+                deleteBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (await Utils.confirm('تأكيد الحذف؟')) {
+                        const id = row.dataset.id;
+                        if (id) deleteCallback(id);
+                    }
+                };
+                wrapper.appendChild(deleteBtn);
+                row.parentNode.insertBefore(wrapper, row);
+                wrapper.appendChild(row);
+                row.classList.add('swipe-row');
+
+                let startX = 0;
+                let currentX = 0;
+                row.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; });
+                row.addEventListener('touchmove', (e) => {
+                    currentX = e.touches[0].clientX;
+                    const diff = startX - currentX;
+                    if (diff > 20) {
+                        row.style.transform = `translateX(-${Math.min(diff, 80)}px)`;
+                        deleteBtn.classList.add('active');
+                    } else {
+                        row.style.transform = '';
+                        deleteBtn.classList.remove('active');
+                    }
+                });
+                row.addEventListener('touchend', () => {
+                    const diff = startX - currentX;
+                    if (diff > 40) {
+                        row.style.transform = 'translateX(-80px)';
+                        deleteBtn.classList.add('active');
+                    } else {
+                        row.style.transform = '';
+                        deleteBtn.classList.remove('active');
+                    }
+                    startX = 0; currentX = 0;
+                });
+                // للكمبيوتر: hover يظهر الزر
+                row.addEventListener('mouseenter', () => { deleteBtn.classList.add('active'); });
+                row.addEventListener('mouseleave', () => {
+                    if (!row.style.transform) deleteBtn.classList.remove('active');
+                });
+            }
+        });
     },
 
     // ========== قفل الشاشة ==========
@@ -190,7 +242,6 @@ const UI = {
 
         let html = '';
 
-        // تنبيهات المخزون والنفوق
         if (App.currentFarm) {
             const stock = await this.getFeedStock(App.currentFarm);
             if (stock && stock.bags < 10) html += `<div class="alert">⚠️ مخزن منخفض: ${stock.bags.toFixed(1)} شيكارة</div>`;
@@ -200,7 +251,6 @@ const UI = {
             if (b.startCount && (bDeathsWeek / b.startCount) * 100 >= 3) html += `<div class="alert">⚠️ ${b.name}: نفوق مرتفع</div>`;
         }
 
-        // تنبيهات موعد البيع المتوقع
         for (const b of batches) {
             const prediction = await Analytics.predictBestSellDate(b.id, b.target || 2.5);
             if (prediction && prediction.daysNeeded <= 3) {
@@ -208,7 +258,6 @@ const UI = {
             }
         }
 
-        // الإجراءات السريعة
         html += `<div class="qabar">`;
         const actions = [
             { ic: '⚖️', lb: 'وزن', fn: "Modals.open('addWeight')" },
@@ -328,6 +377,31 @@ const UI = {
         let html = '';
         const tab = this.currentDTab;
 
+        const addSwipeToTable = () => {
+            setTimeout(() => {
+                const container = el.querySelector('.tw table tbody');
+                if (container) {
+                    const rows = container.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        const deleteBtn = row.querySelector('.dbtn');
+                        if (deleteBtn) {
+                            const id = deleteBtn.getAttribute('onclick').match(/'([^']+)'/)[1];
+                            row.dataset.id = id;
+                        }
+                    });
+                    this.enableSwipeToDelete('.tw table tbody', async (id) => {
+                        if (tab === 'w') { await db.weights.delete(id); }
+                        else if (tab === 'f') { await db.feed.delete(id); }
+                        else if (tab === 'd') { await db.deaths.delete(id); }
+                        else if (tab === 's') { await db.sales.delete(id); }
+                        else if (tab === 'e') { await db.expenses.delete(id); }
+                        this.renderDTab();
+                        this.renderDash();
+                    });
+                }
+            }, 100);
+        };
+
         if (tab === 'w') {
             html += `<button class="btn btn-g" onclick="Modals.open('addWeight')">+ وزن</button>`;
             const rows = (await db.weights.where('batchId').anyOf(bids).toArray()).sort((a, b) => b.date.localeCompare(a.date));
@@ -340,12 +414,16 @@ const UI = {
         } else if (tab === 'f') {
             html += `<button class="btn btn-g" onclick="Modals.open('addFeed')">+ علف</button>`;
             const rows = (await db.feed.where('batchId').anyOf(bids).toArray()).sort((a, b) => b.date.localeCompare(a.date));
+            html += `<div class="chart-w"><canvas id="feedChart"></canvas></div>`;
             html += `<div class="card"><div class="tw"><table><thead><tr><th>دفعة</th><th>كمية</th><th>تاريخ</th><th></th></tr></thead><tbody>`;
             for (const f of rows) {
                 const b = await db.batches.get(f.batchId);
                 html += `<tr><td>${b ? b.name : '-'}</td><td>${f.bags} شيكارة</td><td>${Utils.fD(f.date)}</td><td><button class="dbtn" onclick="db.feed.delete('${f.id}');UI.renderDTab();">×</button></td></tr>`;
             }
             html += `</tbody></table></div></div>`;
+            setTimeout(() => {
+                Charts.renderFeedChart('feedChart', rows);
+            }, 200);
         } else if (tab === 'd') {
             html += `<button class="btn btn-r" onclick="Modals.open('addDeath')">+ نفوق</button>`;
             const rows = (await db.deaths.where('batchId').anyOf(bids).toArray()).sort((a, b) => b.date.localeCompare(a.date));
@@ -406,6 +484,9 @@ const UI = {
             html += '</tbody></table></div></div>';
         }
         el.innerHTML = html;
+        if (['w','f','d','s','e'].includes(tab)) {
+            addSwipeToTable();
+        }
     },
 
     // ========== التهوية والحرارة ==========
@@ -444,8 +525,26 @@ const UI = {
             for (const hn of hangars.filter(Boolean)) {
                 const acts = await db.batches.where('hangarId').equals(hn.id).and(b => b.active).toArray();
                 const birds = acts.reduce((s, b) => s + b.count, 0);
-                const actual = (hn.fans || 0) * (hn.fanCap || 0);
-                html += `<div class="card"><div class="card-title">💨 ${hn.name}</div><div>طيور: ${Utils.fmt(birds)} | قدرة: ${Utils.fmt(actual)} م³/س</div><div class="${actual ? 'ao' : 'alert'} alert">${actual ? '✅ تهوية كافية' : '⚠️ راجع التهوية'}</div></div>`;
+                const actualCapacity = (hn.fans || 0) * (hn.fanCap || 0);
+                const latestTempRecord = (await db.tempLogs.where('hangarId').equals(hn.id).reverse().first());
+                const currentTemp = latestTempRecord ? latestTempRecord.temp : null;
+                let recommendation = '';
+                if (currentTemp !== null && birds > 0) {
+                    const avgAge = acts.length ? Math.round(acts.reduce((s,b) => s + Utils.dAge(b.date),0) / acts.length) : 21;
+                    const ideal = Utils.idealRec(avgAge);
+                    const requiredVentilationPerBird = 4; // m³/h لكل طائر (قيمة تقريبية)
+                    const totalRequiredCapacity = birds * requiredVentilationPerBird;
+                    const fansNeeded = Math.max(1, Math.ceil(totalRequiredCapacity / (hn.fanCap || 1)));
+                    const windowsShouldOpen = currentTemp > ideal.mx;
+                    recommendation = `<div style="margin-top:8px">
+                        <span class="badge bg">⏱ العمر: ${avgAge} يوم</span>
+                        <span class="badge ${currentTemp > ideal.mx ? 'br' : 'bg'}">🌡 الحالية: ${currentTemp}°C (المثالي: ${ideal.mn}-${ideal.mx}°C)</span>
+                        <div class="alert ao" style="margin-top:4px">💨 <b>توصية:</b> تشغيل <b>${fansNeeded} شفاطة</b> (من ${hn.fans} المتاحة). الشبابيك: <b>${windowsShouldOpen ? 'فتح' : 'غلق'}</b></div>
+                    </div>`;
+                }
+                html += `<div class="card"><div class="card-title">💨 ${hn.name}</div><div>طيور: ${Utils.fmt(birds)} | قدرة القصوى: ${Utils.fmt(actualCapacity)} م³/س</div>
+                    ${recommendation}
+                    <div class="${actualCapacity ? 'ao' : 'alert'} alert">${actualCapacity ? '✅ تهوية كافية' : '⚠️ راجع التهوية'}</div></div>`;
             }
         }
         el.innerHTML = html || '<div class="empty">لا عنابر</div>';
@@ -578,4 +677,4 @@ const UI = {
         }
         el.innerHTML = html;
     }
-}; 
+};
