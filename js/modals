@@ -2,7 +2,6 @@
 const Modals = {
     current: null,
 
-    // فتح نافذة منبثقة
     async open(id, param1, param2) {
         let modal = document.getElementById('modal-' + id);
         if (!modal) {
@@ -17,14 +16,13 @@ const Modals = {
         const title = modal.querySelector('.mtitle');
         body.innerHTML = '';
 
-        // إعدادات كل مودال حسب النوع
         switch (id) {
             case 'addFarm':
                 title.textContent = '🏡 مزرعة جديدة';
                 body.innerHTML = `<div class="fg"><label>الاسم *</label><input id="fm-name"></div><div class="fg"><label>الموقع</label><input id="fm-loc"></div><button class="btn btn-g" id="btn-${id}">✅ إضافة</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const name = document.getElementById('fm-name').value.trim();
-                    if (!name) return alert('أدخل الاسم');
+                    if (!name) return Utils.toast('أدخل الاسم', 'warning');
                     await db.farms.put({ id: Utils.uid(), name, loc: document.getElementById('fm-loc').value.trim() });
                     if (!App.currentFarm) App.currentFarm = (await db.farms.toArray())[0]?.id;
                     Modals.close(id); UI.renderFarmBar(); UI.renderFarmTree(); UI.renderDash();
@@ -43,7 +41,7 @@ const Modals = {
                     Modals.close(id); UI.renderFarmBar(); UI.renderFarmTree();
                 };
                 document.getElementById(`btn-del-${id}`).onclick = async () => {
-                    if (!confirm('حذف المزرعة وكل بياناتها؟')) return;
+                    if (!await Utils.confirm('حذف المزرعة وكل بياناتها؟')) return;
                     const hangars = await db.hangars.where('farmId').equals(farm.id).toArray();
                     for (const h of hangars) {
                         await db.batches.where('hangarId').equals(h.id).delete();
@@ -64,7 +62,7 @@ const Modals = {
                 body.innerHTML = `<div class="fg"><label>الاسم *</label><input id="hn-name"></div><div class="g2"><div class="fg"><label>السعة</label><input type="number" id="hn-cap"></div><div class="fg"><label>المساحة م²</label><input type="number" id="hn-area"></div></div><div class="g2"><div class="fg"><label>شبابيك</label><input type="number" id="hn-win"></div><div class="fg"><label>شفاطات</label><input type="number" id="hn-fans"></div></div><div class="fg"><label>قدرة الشفاطة م³/س</label><input type="number" id="hn-fcap"></div><button class="btn btn-g" id="btn-${id}">✅ إضافة</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const name = document.getElementById('hn-name').value.trim();
-                    if (!name) return alert('أدخل الاسم');
+                    if (!name) return Utils.toast('أدخل الاسم', 'warning');
                     await db.hangars.put({
                         id: Utils.uid(), farmId: hangarFarmId, name,
                         cap: +document.getElementById('hn-cap').value || 0,
@@ -93,7 +91,7 @@ const Modals = {
                     Modals.close(id); UI.renderFarmTree();
                 };
                 document.getElementById(`btn-del-${id}`).onclick = async () => {
-                    if (!confirm('حذف العنبر؟')) return;
+                    if (!await Utils.confirm('حذف العنبر؟')) return;
                     await db.batches.where('hangarId').equals(hangar.id).delete();
                     await db.tempLogs.where('hangarId').equals(hangar.id).delete();
                     await db.hangars.delete(hangar.id);
@@ -110,7 +108,7 @@ const Modals = {
                     const name = document.getElementById('bt-name').value.trim();
                     const count = +document.getElementById('bt-count').value;
                     const date = document.getElementById('bt-date').value;
-                    if (!name || !count || !date) return alert('الاسم والعدد والتاريخ مطلوبة');
+                    if (!name || !count || !date) return Utils.toast('الاسم والعدد والتاريخ مطلوبة', 'warning');
                     await db.batches.put({
                         id: Utils.uid(), hangarId: batchHangarId, name, count, startCount: count, date,
                         price: +document.getElementById('bt-price').value || 0,
@@ -128,7 +126,7 @@ const Modals = {
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const batchId = document.getElementById('wt-b').value;
                     const weight = +document.getElementById('wt-w').value;
-                    if (!batchId || !weight) return alert('املأ الحقول');
+                    if (!batchId || !weight) return Utils.toast('املأ الحقول', 'warning');
                     await db.weights.put({
                         id: Utils.uid(), batchId, weight,
                         date: document.getElementById('wt-d').value || Utils.todayS(),
@@ -142,19 +140,19 @@ const Modals = {
                 title.textContent = '🌾 صرف علف';
                 body.innerHTML = `<div class="fg"><label>الدفعة *</label><select id="fd-b" onchange="UI.updateFeedStockInfo()"></select></div><div id="fd-stock-info" style="font-size:.75rem;margin-bottom:8px"></div><div class="g2"><div class="fg"><label>الشيكاير *</label><input type="number" id="fd-bags" step="0.5" oninput="document.getElementById('fd-kg').textContent=(+this.value*${KPB})+' كجم'"><div class="hint" id="fd-kg">0 كجم</div></div><div class="fg"><label>النوع</label><select id="fd-type"><option>بادي</option><option>نامي</option><option>ناهي</option></select></div></div><div class="fg"><label>التاريخ</label><input type="date" id="fd-d" value="${Utils.todayS()}"></div><button class="btn btn-g" id="btn-${id}">✅ صرف</button>`;
                 await UI.fillBatchSelect('fd-b');
-                UI.updateFeedStockInfo(); // للتحديث المبدئي
+                UI.updateFeedStockInfo();
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const batchId = document.getElementById('fd-b').value;
                     const bags = +document.getElementById('fd-bags').value;
                     const date = document.getElementById('fd-d').value || Utils.todayS();
-                    if (!batchId || !bags) return alert('املأ الحقول');
+                    if (!batchId || !bags) return Utils.toast('املأ الحقول', 'warning');
                     const batch = await db.batches.get(batchId);
                     const hangar = batch ? await db.hangars.get(batch.hangarId) : null;
                     const farmId = hangar ? hangar.farmId : null;
                     const kg = bags * KPB;
                     if (farmId) {
                         const stock = await UI.getFeedStock(farmId);
-                        if (kg > stock.kg && !confirm('المخزن غير كافٍ. متابعة؟')) return;
+                        if (kg > stock.kg && !await Utils.confirm('المخزن غير كافٍ. متابعة؟')) return;
                     }
                     await db.feed.put({
                         id: Utils.uid(), batchId, bags, qty: kg,
@@ -182,7 +180,7 @@ const Modals = {
                     const count = +document.getElementById('dt-cnt').value;
                     const date = document.getElementById('dt-d').value || Utils.todayS();
                     const period = document.getElementById('dt-per').value;
-                    if (!batchId || !count) return alert('املأ الحقول');
+                    if (!batchId || !count) return Utils.toast('املأ الحقول', 'warning');
                     const existing = await db.deaths.where({batchId, date, period}).first();
                     if (existing) {
                         existing.count += count;
@@ -216,10 +214,10 @@ const Modals = {
                     Modals.close(id); UI.renderDTab(); UI.renderDash();
                 };
                 document.getElementById(`btn-del-${id}`).onclick = async () => {
-                    if (!confirm('حذف تسجيل النفوق؟')) return;
+                    if (!await Utils.confirm('حذف تسجيل النفوق؟')) return;
                     const batch = await db.batches.get(death.batchId);
                     if (batch) {
-                        batch.count += death.count; // استعادة العدد
+                        batch.count += death.count;
                         await db.batches.put(batch);
                     }
                     await db.deaths.delete(death.id);
@@ -237,7 +235,7 @@ const Modals = {
                     const weight = +document.getElementById('sl-w').value || 0;
                     const price = +document.getElementById('sl-price').value;
                     const date = document.getElementById('sl-d').value || Utils.todayS();
-                    if (!batchId || !count || !price) return alert('املأ الحقول');
+                    if (!batchId || !count || !price) return Utils.toast('املأ الحقول', 'warning');
                     const total = Math.round(count * weight * price);
                     await db.sales.put({ id: Utils.uid(), batchId, count, weight, price, total, date });
                     Modals.close(id); UI.renderDTab(); UI.renderDash();
@@ -250,7 +248,7 @@ const Modals = {
                 await UI.fillBatchSelect('ex-b', true);
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const amount = +document.getElementById('ex-amt').value;
-                    if (!amount) return alert('أدخل المبلغ');
+                    if (!amount) return Utils.toast('أدخل المبلغ', 'warning');
                     await db.expenses.put({
                         id: Utils.uid(),
                         type: document.getElementById('ex-type').value,
@@ -269,7 +267,7 @@ const Modals = {
                 body.innerHTML = `<div class="fg"><label>الاسم *</label><input id="st-name"></div><div class="g2"><div class="fg"><label>الدور</label><select id="st-role"><option>عامل</option><option>مهندس</option><option>مشرف</option><option>سائق</option></select></div><div class="fg"><label>بدل/جمعة</label><input type="number" id="st-allow"></div></div><div class="fg"><label>سلفة/جمعة</label><input type="number" id="st-adv"></div><div class="fg"><label>تاريخ التعيين</label><input type="date" id="st-start" value="${Utils.todayS()}"></div><button class="btn btn-g" id="btn-${id}">✅ إضافة</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const name = document.getElementById('st-name').value.trim();
-                    if (!name) return alert('أدخل الاسم');
+                    if (!name) return Utils.toast('أدخل الاسم', 'warning');
                     await db.staff.put({
                         id: Utils.uid(), farmId: staffFarmId, name,
                         role: document.getElementById('st-role').value,
@@ -288,7 +286,7 @@ const Modals = {
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const hangarId = document.getElementById('tl-h').value;
                     const temp = document.getElementById('tl-t').value;
-                    if (!hangarId || temp === '') return alert('املأ الحقول');
+                    if (!hangarId || temp === '') return Utils.toast('املأ الحقول', 'warning');
                     await db.tempLogs.put({
                         id: Utils.uid(), hangarId, temp: +temp,
                         hum: +document.getElementById('tl-hum').value || null,
@@ -305,7 +303,7 @@ const Modals = {
                 body.innerHTML = `<div class="g2"><div class="fg"><label>الشيكاير *</label><input type="number" id="si-bags" oninput="document.getElementById('si-kg').textContent=(+this.value*${KPB})+' كجم'"></div><div class="fg"><label>النوع</label><select id="si-type"><option>بادي</option><option>نامي</option><option>ناهي</option><option>مختلط</option></select></div></div><div class="g2"><div class="fg"><label>سعر الطن</label><input type="number" id="si-price"></div><div class="fg"><label>التاريخ</label><input type="date" id="si-d" value="${Utils.todayS()}"></div></div><div class="fg"><label>ملاحظة</label><input id="si-note"></div><button class="btn btn-g" id="btn-${id}">✅ إضافة</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const bags = +document.getElementById('si-bags').value;
-                    if (!bags) return alert('أدخل الشيكاير');
+                    if (!bags) return Utils.toast('أدخل الشيكاير', 'warning');
                     await db.feedStore.put({
                         id: Utils.uid(), farmId: App.currentFarm,
                         date: document.getElementById('si-d').value || Utils.todayS(),
@@ -324,7 +322,7 @@ const Modals = {
                 await UI.fillBatchSelect('ph-b', true);
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const file = document.getElementById('ph-file').files[0];
-                    if (!file) return alert('اختر صورة');
+                    if (!file) return Utils.toast('اختر صورة', 'warning');
                     const reader = new FileReader();
                     reader.onload = async (e) => {
                         await db.photos.put({
@@ -346,7 +344,7 @@ const Modals = {
                 body.innerHTML = `<div class="fg"><label>الاسم *</label><input id="cl-name"></div><div class="fg"><label>الهاتف</label><input id="cl-phone"></div><button class="btn btn-g" id="btn-${id}">✅ إضافة</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const name = document.getElementById('cl-name').value.trim();
-                    if (!name) return alert('أدخل الاسم');
+                    if (!name) return Utils.toast('أدخل الاسم', 'warning');
                     await db.clients.put({ id: Utils.uid(), name, phone: document.getElementById('cl-phone').value });
                     Modals.close(id); UI.renderMore();
                 };
@@ -361,7 +359,7 @@ const Modals = {
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const clientId = document.getElementById('cs-client').value;
                     const amount = +document.getElementById('cs-amt').value;
-                    if (!clientId || !amount) return alert('املأ الحقول');
+                    if (!clientId || !amount) return Utils.toast('املأ الحقول', 'warning');
                     await db.clientSales.put({
                         id: Utils.uid(), clientId, amount,
                         date: document.getElementById('cs-date').value || Utils.todayS(),
@@ -376,7 +374,7 @@ const Modals = {
                 body.innerHTML = `<div class="fg"><label>النوع</label><select id="mp-type"><option>كتكوت</option><option>علف</option><option>بيع</option></select></div><div class="fg"><label>السعر</label><input type="number" id="mp-price"></div><div class="fg"><label>التاريخ</label><input type="date" id="mp-date" value="${Utils.todayS()}"></div><button class="btn btn-g" id="btn-${id}">✅ حفظ</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const price = +document.getElementById('mp-price').value;
-                    if (!price) return alert('أدخل السعر');
+                    if (!price) return Utils.toast('أدخل السعر', 'warning');
                     await db.marketPrices.put({
                         id: Utils.uid(),
                         type: document.getElementById('mp-type').value,
@@ -392,7 +390,7 @@ const Modals = {
                 body.innerHTML = `<div class="fg"><label>النوع</label><select id="ag-type"><option>تحصين</option><option>تغيير علف</option><option>بيع متوقع</option><option>أخرى</option></select></div><div class="fg"><label>التاريخ</label><input type="date" id="ag-date" value="${Utils.todayS()}"></div><div class="fg"><label>ملاحظة</label><input id="ag-note"></div><button class="btn btn-g" id="btn-${id}">✅ حفظ</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const date = document.getElementById('ag-date').value;
-                    if (!date) return alert('اختر التاريخ');
+                    if (!date) return Utils.toast('اختر التاريخ', 'warning');
                     await db.agenda.put({
                         id: Utils.uid(),
                         type: document.getElementById('ag-type').value,
@@ -425,29 +423,44 @@ const Modals = {
                 document.getElementById('exp-pdf').onclick = () => { Export.toPDF(); Modals.close(id); };
                 break;
 
-            default:
+            case 'lock':
+                title.textContent = '🔒 قفل التطبيق';
+                body.innerHTML = `<div class="fg"><label>الرقم السري الجديد (اتركه فارغاً للإلغاء)</label><input type="password" id="lock-pass"></div><button class="btn btn-g" id="btn-${id}">✅ حفظ</button>`;
+                document.getElementById(`btn-${id}`).onclick = async () => {
+                    const pass = document.getElementById('lock-pass').value;
+                    if (pass) {
+                        await db.settings.put({ key: 'lock', value: pass });
+                        Utils.toast('تم تفعيل القفل');
+                    } else {
+                        await db.settings.delete('lock');
+                        Utils.toast('تم إلغاء القفل');
+                    }
+                    Modals.close(id);
+                };
                 break;
+
+            case 'backup':
+                title.textContent = '💾 نسخ احتياطي';
+                body.innerHTML = `<button class="btn btn-g" id="backup-export">📤 تصدير JSON</button>
+                    <label class="btn btn-o" style="margin-top:6px">📥 استيراد JSON <input type="file" id="backup-file" accept=".json" style="display:none" onchange="Export.restoreJSON(this.files[0])"></label>`;
+                document.getElementById('backup-export').onclick = () => { Export.backupJSON(); Modals.close(id); };
+                break;
+
+            default: break;
         }
         modal.classList.add('open');
         this.current = id;
     },
 
-    // إغلاق النافذة
     close(id) {
         const modal = document.getElementById('modal-' + id);
         if (modal) modal.classList.remove('open');
         this.current = null;
     },
 
-    // دوال سريعة لعرض نوافذ شائعة
-    showWeather() {
-        Modals.open('weather');
-    },
-    showExport() {
-        Modals.open('export');
-    },
+    showWeather() { Modals.open('weather'); },
+    showExport() { Modals.open('export'); },
 
-    // تحديث محتوى الطقس داخل النافذة
     async refreshWeatherBody() {
         const el = document.getElementById('wxContent');
         if (!el) return;
@@ -462,4 +475,4 @@ const Modals = {
             <div class="stat"><div class="sn">${w.wind}</div><div class="sl">رياح كم/س</div></div>
         </div>`;
     }
-};
+}; 
