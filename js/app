@@ -4,6 +4,8 @@ const App = {
     currentHangar: null,
     async init() {
         await migrateFromLocalStorage();
+        const unlocked = await UI.checkLock();
+        if (!unlocked) return;
         document.getElementById('hdrDate').textContent = new Date().toLocaleDateString('ar-EG', {weekday:'long', day:'numeric', month:'long'});
         if ((await db.farms.count()) > 0) {
             App.currentFarm = (await db.farms.toArray())[0].id;
@@ -55,4 +57,4 @@ const App = {
         return batches.map(b => b.id);
     }
 };
-window.addEventListener('DOMContentLoaded', () => App.init());
+window.addEventListener('DOMContentLoaded', () => App.init()); 
