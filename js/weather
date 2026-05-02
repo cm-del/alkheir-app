@@ -21,5 +21,16 @@ const Weather = {
         } catch(e) {
             return null;
         }
+    },
+    async renderWidget(elId) {
+        const w = await this.load();
+        if (!w) return null;
+        document.getElementById(elId || 'hdrTemp').textContent = w.temp + '°';
+        const ab = await db.batches.where('active').equals(1).toArray();
+        const avg = ab.length ? Math.round(ab.reduce((s,b) => s + Utils.dAge(b.date),0) / ab.length) : 21;
+        const rec = Utils.idealRec(avg);
+        const tOk = w.temp >= rec.mn && w.temp <= rec.mx;
+        const hOk = w.hum >= rec.hn && w.hum <= rec.hx;
+        return { w, rec, tOk, hOk, avg };
     }
-};
+}; 
