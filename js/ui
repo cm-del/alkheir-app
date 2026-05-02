@@ -32,7 +32,7 @@ const UI = {
         const sel = document.getElementById(selectId);
         if (!sel) return;
         sel.innerHTML = '<option value="">اختر عنبر...</option>';
-        const hangars = App.currentFarm 
+        const hangars = App.currentFarm
             ? await db.hangars.where('farmId').equals(App.currentFarm).toArray()
             : await db.hangars.toArray();
         hangars.forEach(h => {
@@ -101,6 +101,37 @@ const UI = {
         }
     },
 
+    // ========== قفل الشاشة ==========
+    async checkLock() {
+        const lockSetting = await db.settings.get('lock');
+        if (!lockSetting) return true;
+        return new Promise(resolve => {
+            const div = document.createElement('div');
+            div.className = 'lock-screen';
+            div.innerHTML = `<h3>🔒 التطبيق مقفل</h3><input type="password" id="lock-input" placeholder="الرقم السري"><button class="btn btn-g" id="lock-submit">فتح</button>`;
+            document.body.appendChild(div);
+            document.getElementById('lock-submit').onclick = () => {
+                if (document.getElementById('lock-input').value === lockSetting.value) {
+                    div.remove();
+                    resolve(true);
+                } else {
+                    Utils.toast('رقم سري خاطئ', 'error');
+                }
+            };
+        });
+    },
+    async toggleLock() {
+        const lockSetting = await db.settings.get('lock');
+        if (lockSetting) {
+            if (await Utils.confirm('إلغاء القفل؟')) {
+                await db.settings.delete('lock');
+                Utils.toast('تم إلغاء القفل');
+            }
+        } else {
+            Modals.open('lock');
+        }
+    },
+
     // ========== أشرطة التنقل ==========
     async renderFarmBar() {
         const bar = document.getElementById('farmBar');
@@ -133,14 +164,12 @@ const UI = {
         const batches = await db.batches.where('id').anyOf(bids).and(b => b.active).toArray();
         const birds = batches.reduce((s, b) => s + b.count, 0);
 
-        // نفوق الأسبوع
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         const waStr = weekAgo.toISOString().split('T')[0];
         const allDeathsWeek = (await db.deaths.where('batchId').anyOf(bids).and(d => d.date >= waStr).toArray());
         const deathsWeek = allDeathsWeek.reduce((s, d) => s + d.count, 0);
 
-        // متوسط الوزن
         const lastWeights = [];
         for (const b of batches) {
             const lw = await db.weights.where('batchId').equals(b.id).reverse().first();
@@ -148,7 +177,6 @@ const UI = {
         }
         const avgW = lastWeights.length ? (lastWeights.reduce((a, b) => a + b, 0) / lastWeights.length).toFixed(2) : '-';
 
-        // الحسابات المالية
         const inc = (await db.sales.where('batchId').anyOf(bids).toArray()).reduce((s, x) => s + x.total, 0);
         const cCst = batches.reduce((s, b) => s + (b.startCount * (b.price || 0)), 0);
         let sCst = 0;
@@ -162,7 +190,7 @@ const UI = {
 
         let html = '';
 
-        // تنبيهات
+        // تنبيهات المخزون والنفوق
         if (App.currentFarm) {
             const stock = await this.getFeedStock(App.currentFarm);
             if (stock && stock.bags < 10) html += `<div class="alert">⚠️ مخزن منخفض: ${stock.bags.toFixed(1)} شيكارة</div>`;
@@ -170,6 +198,14 @@ const UI = {
         for (const b of batches) {
             const bDeathsWeek = (await db.deaths.where('batchId').equals(b.id).and(d => d.date >= waStr).toArray()).reduce((s, d) => s + d.count, 0);
             if (b.startCount && (bDeathsWeek / b.startCount) * 100 >= 3) html += `<div class="alert">⚠️ ${b.name}: نفوق مرتفع</div>`;
+        }
+
+        // تنبيهات موعد البيع المتوقع
+        for (const b of batches) {
+            const prediction = await Analytics.predictBestSellDate(b.id, b.target || 2.5);
+            if (prediction && prediction.daysNeeded <= 3) {
+                html += `<div class="alert ai">📅 ${b.name}: متوقع الوصول لوزن ${b.target} كجم خلال ${prediction.daysNeeded} يوم (${prediction.date})</div>`;
+            }
         }
 
         // الإجراءات السريعة
@@ -186,10 +222,8 @@ const UI = {
         actions.forEach(a => html += `<div class="qa" onclick="${a.fn}"><div class="qa-ic">${a.ic}</div><div class="qa-lb">${a.lb}</div></div>`);
         html += `</div>`;
 
-        // ودجت الطقس
         html += `<div id="wxWidget"></div>`;
 
-        // إحصائيات
         html += `<div class="sg">
             <div class="stat"><div class="sn">${Utils.fmt(birds)}</div><div class="sl">طيور</div></div>
             <div class="stat w"><div class="sn">${batches.length}</div><div class="sl">دفعات</div></div>
@@ -197,7 +231,6 @@ const UI = {
             <div class="stat b"><div class="sn">${avgW}</div><div class="sl">وزن كجم</div></div>
         </div>`;
 
-        // الملخص المالي
         html += `<div class="card"><div class="card-title">💰 الملخص المالي</div>
             <div class="g2" style="margin-bottom:9px">
                 <div><div style="font-size:.66rem;color:var(--muted)">مبيعات</div><div style="font-size:1rem;font-weight:900;color:var(--a)">${Utils.fmt(Math.round(inc))} ج.م</div></div>
@@ -207,7 +240,6 @@ const UI = {
             <div style="font-size:.68rem;color:var(--muted);margin-top:8px">صافي الربح</div>
             <div style="font-size:1.3rem;margin-top:2px" class="${pr >= 0 ? 'pp' : 'pn'}">${(pr >= 0 ? '+' : '') + Utils.fmt(Math.round(pr))} ج.م</div></div>`;
 
-        // الدفعات النشطة
         html += `<div class="sec-t">🐔 الدفعات النشطة</div><div id="dashBatches">`;
         if (batches.length) {
             for (const b of batches) {
@@ -226,7 +258,6 @@ const UI = {
 
         page.innerHTML = html;
 
-        // تحديث الطقس
         const wData = await Weather.renderWidget('hdrTemp');
         if (wData) {
             const widget = document.getElementById('wxWidget');
@@ -353,6 +384,26 @@ const UI = {
                 html += `<div class="sc"><div>${s.name} <span class="badge bp">${s.role}</span><br><small>${fr} جمعة · ${Utils.fmt(Math.round(totalS))} ج.م</small></div><button class="dbtn" onclick="db.staff.delete('${s.id}');UI.renderDTab();">×</button></div>`;
             }
             html += `<div class="card"><div class="card-title">💼 الإجمالي: ${Utils.fmt(Math.round(total))} ج.م</div></div>`;
+        } else if (tab === 'cmp') {
+            const batches = await db.batches.where('id').anyOf(bids).toArray();
+            html += `<div class="card"><div class="card-title">🔄 مقارنة الدفعات</div><div class="tw"><table><thead><tr><th>الدفعة</th><th>العدد</th><th>العمر</th><th>FCR</th><th>نفوق</th><th>تكلفة/كجم</th><th>ربح</th></tr></thead><tbody>`;
+            for (const b of batches) {
+                const lw = (await db.weights.where('batchId').equals(b.id).reverse().first());
+                const fKg = (await db.feed.where('batchId').equals(b.id).toArray()).reduce((s, x) => s + x.qty, 0);
+                const fcr = lw && fKg && b.startCount ? (fKg / (b.startCount * lw.weight)).toFixed(2) : '-';
+                const deaths = (await db.deaths.where('batchId').equals(b.id).toArray()).reduce((s, d) => s + d.count, 0);
+                const costData = await Analytics.costPerKg(b.id);
+                html += `<tr>
+                    <td>${b.name}</td>
+                    <td>${b.count}</td>
+                    <td>${Utils.dAge(b.date)} يوم</td>
+                    <td>${fcr}</td>
+                    <td>${deaths}</td>
+                    <td>${costData ? costData.costPerKg.toFixed(2) + ' ج.م' : '-'}</td>
+                    <td style="color:${costData && costData.profit >= 0 ? 'var(--a)' : 'var(--danger)'}">${costData ? Utils.fmt(Math.round(costData.profit)) + ' ج.م' : '-'}</td>
+                </tr>`;
+            }
+            html += '</tbody></table></div></div>';
         }
         el.innerHTML = html;
     },
@@ -376,11 +427,17 @@ const UI = {
             html += `<button class="btn btn-g" onclick="Modals.open('addTemp')">+ حرارة</button>`;
             for (const hn of hangars.filter(Boolean)) {
                 const logs = (await db.tempLogs.where('hangarId').equals(hn.id).toArray())
-                    .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 12);
+                    .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 20);
                 html += `<div class="card"><div class="card-title">🌡 ${hn.name}</div>`;
                 logs.forEach(tl => {
                     html += `<div class="trow"><div class="ttime">${tl.date.slice(5)}<br>${tl.time}</div><div style="font-weight:900">${tl.temp}°C</div></div>`;
                 });
+                if (logs.length >= 2) {
+                    html += `<div class="chart-w"><canvas id="tempChart-${hn.id}"></canvas></div>`;
+                    setTimeout(() => {
+                        Charts.renderTempChart(`tempChart-${hn.id}`, logs.reverse());
+                    }, 100);
+                }
                 html += `</div>`;
             }
         } else {
@@ -514,7 +571,11 @@ const UI = {
                     });
                 }, 200);
                 break;
+            case 'backup':
+                html += `<button class="btn btn-g" onclick="Export.backupJSON()">📤 تصدير نسخة JSON</button>
+                    <label class="btn btn-o" style="margin-top:6px">📥 استيراد نسخة <input type="file" id="restore-file" accept=".json" style="display:none" onchange="Export.restoreJSON(this.files[0])"></label>`;
+                break;
         }
         el.innerHTML = html;
     }
-};
+}; 
