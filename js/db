@@ -1,6 +1,6 @@
 'use strict';
 const db = new Dexie('AlkheirDB');
-db.version(1).stores({
+db.version(2).stores({
     farms: 'id',
     hangars: 'id, farmId',
     batches: 'id, hangarId, active',
@@ -17,9 +17,11 @@ db.version(1).stores({
     marketPrices: 'id',
     clients: 'id',
     clientSales: 'id, clientId',
-    agenda: 'id'
+    agenda: 'id',
+    settings: 'key'
 });
 
+// ترحيل البيانات من localStorage القديم
 async function migrateFromLocalStorage() {
     const old = localStorage.getItem('akh_v9');
     if (!old) return;
@@ -42,4 +44,4 @@ async function migrateFromLocalStorage() {
     if (data.agenda) await db.agenda.bulkPut(data.agenda);
     localStorage.removeItem('akh_v9');
     console.log('تم ترحيل البيانات');
-}
+} 
