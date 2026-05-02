@@ -26,5 +26,27 @@ const Analytics = {
         const targetDate = new Date();
         targetDate.setDate(targetDate.getDate() + (daysNeeded - currentAge));
         return { date: targetDate.toISOString().split('T')[0], daysNeeded, model };
+    },
+    async costPerKg(batchId) {
+        const b = await db.batches.get(batchId);
+        if (!b) return null;
+        const feedKg = (await db.feed.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s+x.qty,0);
+        const deaths = (await db.deaths.where('batchId').equals(batchId).toArray()).reduce((s,d)=>s+d.count,0);
+        const startCount = b.startCount || b.count;
+        // سعر العلف التقريبي: آخر سعر علف مسجل
+        const lastFeedPrice = (await db.marketPrices.where('type').equals('علف').reverse().first())?.price || 0;
+        const totalFeedCost = feedKg * (lastFeedPrice / 1000); // السعر للطن، نحول للكجم
+        const chickCost = startCount * (b.price || 0);
+        const expenses = (await db.expenses.where('batchId').equals(batchId).toArray()).reduce((s,e)=>s+e.amount,0);
+        const totalCost = chickCost + totalFeedCost + expenses;
+        const totalSales = (await db.sales.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s+x.total,0);
+        const totalWeightSold = (await db.sales.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s + (x.count * x.weight),0);
+        return {
+            cost: totalCost,
+            weightSold: totalWeightSold,
+            costPerKg: totalWeightSold ? totalCost / totalWeightSold : 0,
+            revenue: totalSales,
+            profit: totalSales - totalCost
+        };
     }
-};
+}; 
