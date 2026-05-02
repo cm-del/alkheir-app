@@ -23,6 +23,25 @@ const Utils = {
         if(a<=21) return {mn:26,mx:29,hn:55,hx:70};
         if(a<=28) return {mn:23,mx:26,hn:55,hx:70};
         return {mn:20,mx:24,hn:55,hx:75};
+    },
+    // إشعار توست
+    toast(msg, type = 'success') {
+        const bg = type === 'error' ? 'var(--danger)' : type === 'warning' ? 'var(--a2)' : 'var(--a)';
+        Toastify({
+            text: msg,
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "center",
+            backgroundColor: bg,
+            className: "toastify"
+        }).showToast();
+    },
+    async confirm(msg) {
+        return new Promise(resolve => {
+            if (confirm(msg)) resolve(true);
+            else resolve(false);
+        });
     }
 };
 const KPB = 50;
