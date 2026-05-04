@@ -13,6 +13,7 @@
         h2{color:var(--a);margin-bottom:8px}
         p{color:#4a7a5e;font-size:0.9rem}
         button{margin-top:16px;padding:10px 24px;background:var(--a);color:#050e08;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif}
+        .status{font-size:0.75rem;color:var(--a);margin-top:12px}
     </style>
 </head>
 <body>
@@ -21,6 +22,16 @@
         <h2>أنت غير متصل</h2>
         <p>التطبيق يعمل محلياً لكن الطقس والميزات الحية تحتاج اتصالاً.</p>
         <button onclick="location.reload()">إعادة المحاولة</button>
+        <div class="status" id="reconnect-status">⏳ جاري البحث عن اتصال كل 5 ثوانٍ...</div>
     </div>
+
+    <script>
+        // التحقق دورياً من عودة الاتصال
+        setInterval(() => {
+            if (navigator.onLine) {
+                window.location.href = 'index.html';
+            }
+        }, 5000);
+    </script>
 </body>
-</html>
+</html> 
