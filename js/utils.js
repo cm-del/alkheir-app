@@ -24,6 +24,10 @@ const Utils = {
         if(a<=28) return {mn:23,mx:26,hn:55,hx:70};
         return {mn:20,mx:24,hn:55,hx:75};
     },
+    // ⭐ دالة جديدة: تنسيق المبلغ بالجنيه المصري
+    fmtCurrency(amount) {
+        return this.fmt(Math.round(amount)) + ' ج.م';
+    },
     toast(msg, type = 'success') {
         const bg = type === 'error' ? 'var(--danger)' : type === 'warning' ? 'var(--a2)' : 'var(--a)';
         Toastify({
