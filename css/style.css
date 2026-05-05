@@ -17,6 +17,9 @@
     --border: #1c3424;
     --r: 14px;
     --rs: 10px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.2);
 }
 
 @media (prefers-color-scheme: light) {
@@ -37,6 +40,9 @@
         --warning: #d97706;
         --info: #2563eb;
         --secondary: #4f46e5;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.03);
+        --shadow-md: 0 2px 4px rgba(0,0,0,0.06);
+        --shadow-lg: 0 8px 12px rgba(0,0,0,0.1);
     }
 }
 
@@ -60,7 +66,6 @@ body {
     overflow-x: hidden;
 }
 
-/* نمط خلفية متحرك للداشبورد */
 #page-dash {
     background-image: radial-gradient(circle at 20% 30%, rgba(0,226,114,0.03) 0%, transparent 30%),
                       radial-gradient(circle at 80% 70%, rgba(56,182,255,0.03) 0%, transparent 30%),
@@ -455,7 +460,8 @@ body {
 }
 
 .btn-g {
-    background: linear-gradient(135deg, #00e272, #009f4f);
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
     color: #050e08;
 }
 
@@ -601,7 +607,6 @@ tr:last-child td {
     overflow: hidden;
 }
 
-/* حركة متحركة لشريط التقدم */
 .pb::after {
     content: '';
     position: absolute;
@@ -854,7 +859,6 @@ tr:last-child td {
     cursor: pointer;
 }
 
-/* تأثير hover على كروت الدفعات */
 .bc:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -1092,7 +1096,6 @@ tr:last-child td {
     }
 }
 
-/* تأثير نبض التنبيهات */
 @keyframes pulse-warn {
     0% { box-shadow: 0 0 0 0 rgba(255,59,92,0.4); }
     70% { box-shadow: 0 0 0 6px rgba(255,59,92,0); }
@@ -1103,4 +1106,4 @@ tr:last-child td {
 }
 .stock.low {
     animation: pulse-warn 2s infinite;
-    }
+        } 
