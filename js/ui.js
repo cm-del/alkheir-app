@@ -186,15 +186,37 @@ const UI = {
 
         let html = '';
 
-        // زر تحديث الداشبورد (رقم 3)
+        // زر تحديث الداشبورد
         html += `<button class="btn btn-sm btn-outline" onclick="App.refreshCurrentPage()" style="margin-bottom:8px">🔄 تحديث</button>`;
+
+        // القائمة المنسدلة السريعة (رقم 5)
+        const farms = await db.farms.toArray();
+        const currentFarmId = App.currentFarm;
+        const currentHangarId = App.currentHangar;
+        html += `<div class="card" style="padding:10px;">
+            <div class="g2">
+                <div class="fg" style="margin-bottom:0">
+                    <label style="font-size:.66rem">المزرعة</label>
+                    <select id="dashFarmSelect" style="font-size:.8rem;padding:6px 8px;">
+                        <option value="">الكل</option>
+                        ${farms.map(f => `<option value="${f.id}" ${f.id === currentFarmId ? 'selected' : ''}>${f.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="fg" style="margin-bottom:0">
+                    <label style="font-size:.66rem">العنبر</label>
+                    <select id="dashHangarSelect" style="font-size:.8rem;padding:6px 8px;">
+                        <option value="">الكل</option>
+                    </select>
+                </div>
+            </div>
+        </div>`;
 
         if (App.currentFarm) {
             const stock = await this.getFeedStock(App.currentFarm);
             if (stock && stock.bags < 10) html += `<div class="alert">⚠️ مخزن منخفض: ${stock.bags.toFixed(1)} شيكارة</div>`;
 
-            // شريط تقدم المخزن (رقم 4)
-            const maxBags = 100; // سعة تقديرية قصوى للشيكاير
+            // شريط تقدم المخزن
+            const maxBags = 100;
             const percent = Math.min(100, (stock.bags / maxBags) * 100);
             html += `<div class="card" style="margin-bottom:10px">
                 <div class="card-title">📦 مستوى المخزن</div>
@@ -276,7 +298,41 @@ const UI = {
 
         page.innerHTML = html;
 
-        // كارت الطقس الجديد (رقم 5)
+        // تفعيل القوائم المنسدلة
+        const farmSelect = document.getElementById('dashFarmSelect');
+        const hangarSelect = document.getElementById('dashHangarSelect');
+
+        async function populateHangars(farmId) {
+            if (!hangarSelect) return;
+            hangarSelect.innerHTML = '<option value="">الكل</option>';
+            if (!farmId) return;
+            const hs = await db.hangars.where('farmId').equals(farmId).toArray();
+            hs.forEach(h => {
+                hangarSelect.innerHTML += `<option value="${h.id}" ${h.id === App.currentHangar ? 'selected' : ''}>${h.name}</option>`;
+            });
+        }
+
+        if (farmSelect) {
+            farmSelect.addEventListener('change', async () => {
+                const newFarm = farmSelect.value || null;
+                App.setFarm(newFarm);
+                await populateHangars(newFarm);
+                await App.refreshCurrentPage();
+            });
+        }
+
+        if (hangarSelect) {
+            hangarSelect.addEventListener('change', async () => {
+                const newHangar = hangarSelect.value || null;
+                App.setHangar(newHangar);
+                await App.refreshCurrentPage();
+            });
+        }
+
+        // تعبئة العنابر المبدئية حسب المزرعة الحالية
+        await populateHangars(App.currentFarm);
+
+        // كارت الطقس الجديد
         const wData = await Weather.renderWidget('hdrTemp');
         if (wData) {
             const widget = document.getElementById('wxWidget');
@@ -602,4 +658,4 @@ const UI = {
         }
         el.innerHTML = html;
     }
-}; 
+};
