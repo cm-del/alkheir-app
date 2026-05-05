@@ -3,6 +3,7 @@ const Weather = {
     cache: {},
     forecastCache: {},
     currentRegion: '30.06,31.25',
+    TIMEOUT_MS: 8000, // 8 ثواني، مناسب للنت الضعيف
 
     async load(region = this.currentRegion) {
         const key = region;
@@ -10,7 +11,13 @@ const Weather = {
         if (cached && Date.now() - cached.ts < 1800000) return cached.data;
         const [lat, lon] = region.split(',');
         try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,uv_index&timezone=Africa/Cairo`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
+            const res = await fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,uv_index&timezone=Africa/Cairo`,
+                { signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
             const d = await res.json();
             const data = {
                 temp: d.current.temperature_2m,
@@ -22,6 +29,9 @@ const Weather = {
             this.cache[key] = { ts: Date.now(), data };
             return data;
         } catch(e) {
+            if (e.name === 'AbortError') {
+                console.warn('⚠️ طلب الطقس استغرق وقت أطول من 8 ثواني واتلغى.');
+            }
             return null;
         }
     },
@@ -29,11 +39,17 @@ const Weather = {
     async loadForecast(region = this.currentRegion, days = 7) {
         const key = region + '_fc';
         const cached = this.forecastCache[key];
-        if (cached && Date.now() - cached.ts < 10800000) return cached.data; // 3 ساعات
+        if (cached && Date.now() - cached.ts < 10800000) return cached.data;
 
         const [lat, lon] = region.split(',');
         try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=Africa/Cairo&forecast_days=${days}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
+            const res = await fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=Africa/Cairo&forecast_days=${days}`,
+                { signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
             const d = await res.json();
             const daysData = d.daily.time.map((date, i) => ({
                 date,
@@ -46,6 +62,9 @@ const Weather = {
             this.forecastCache[key] = { ts: Date.now(), data: daysData };
             return daysData;
         } catch(e) {
+            if (e.name === 'AbortError') {
+                console.warn('⚠️ طلب التوقعات استغرق وقت أطول من 8 ثواني واتلغى.');
+            }
             return null;
         }
     },
