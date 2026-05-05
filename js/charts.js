@@ -1,6 +1,46 @@
 'use strict';
 const Charts = {
-    renderGrowthChart(canvasId, batchesData) {
+    // دوال مساعدة للتحميل الكسول
+    _chartLoaded: false,
+    _annotationLoaded: false,
+    _loadingPromise: null,
+
+    async _ensureChart() {
+        if (window.Chart) return;
+        if (!this._loadingPromise) {
+            this._loadingPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';
+                script.onload = () => {
+                    this._chartLoaded = true;
+                    resolve();
+                };
+                script.onerror = () => reject(new Error('فشل تحميل Chart.js'));
+                document.head.appendChild(script);
+            });
+        }
+        await this._loadingPromise;
+    },
+
+    async _ensureAnnotation() {
+        // نحمله لو محتاجين annotations (حالياً مش مستخدمين، لكن نتركه اختياري)
+        if (window.ChartAnnotation) return;
+        if (this._annotationLoading) await this._annotationLoading;
+        this._annotationLoading = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js';
+            script.onload = () => {
+                this._annotationLoaded = true;
+                resolve();
+            };
+            script.onerror = () => reject(new Error('فشل تحميل chartjs-plugin-annotation'));
+            document.head.appendChild(script);
+        });
+        await this._annotationLoading;
+    },
+
+    async renderGrowthChart(canvasId, batchesData) {
+        await this._ensureChart();
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
         const colors = ['#00e272', '#ffb703', '#38b6ff'];
@@ -25,7 +65,9 @@ const Charts = {
             }
         });
     },
-    renderTempChart(canvasId, tempLogs) {
+
+    async renderTempChart(canvasId, tempLogs) {
+        await this._ensureChart();
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
         const labels = tempLogs.map(t => t.date.slice(5) + ' ' + t.time);
@@ -54,7 +96,9 @@ const Charts = {
             }
         });
     },
-    renderFeedChart(canvasId, feedData) {
+
+    async renderFeedChart(canvasId, feedData) {
+        await this._ensureChart();
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
         const sorted = feedData.sort((a, b) => a.date.localeCompare(b.date));
@@ -84,7 +128,9 @@ const Charts = {
             }
         });
     },
-    renderMortalityChart(canvasId, deathsData) {
+
+    async renderMortalityChart(canvasId, deathsData) {
+        await this._ensureChart();
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
         const sorted = deathsData.sort((a, b) => a.date.localeCompare(b.date));
@@ -116,4 +162,4 @@ const Charts = {
             }
         });
     }
-}; 
+};
