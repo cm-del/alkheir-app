@@ -26,12 +26,16 @@ self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE).then(cache => cache.addAll(ASSETS))
     );
-    self.skipWaiting(); // تفعيل فوري
+    self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
     event.waitUntil(
-        clients.claim() // يجعل الـ SW الجديد يتحكم فوراً بكل الصفحات
+        caches.keys().then(keys => {
+            return Promise.all(
+                keys.filter(key => key !== CACHE).map(key => caches.delete(key))
+            );
+        }).then(() => clients.claim())
     );
 });
 
