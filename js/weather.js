@@ -1,20 +1,23 @@
 'use strict';
 const Weather = {
     cache: {},
+    forecastCache: {},
     currentRegion: '30.06,31.25',
+
     async load(region = this.currentRegion) {
         const key = region;
         const cached = this.cache[key];
         if (cached && Date.now() - cached.ts < 1800000) return cached.data;
         const [lat, lon] = region.split(',');
         try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m&timezone=Africa/Cairo`);
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,uv_index&timezone=Africa/Cairo`);
             const d = await res.json();
             const data = {
                 temp: d.current.temperature_2m,
                 hum: d.current.relative_humidity_2m,
                 fl: d.current.apparent_temperature,
-                wind: d.current.wind_speed_10m
+                wind: d.current.wind_speed_10m,
+                uv: d.current.uv_index
             };
             this.cache[key] = { ts: Date.now(), data };
             return data;
@@ -22,6 +25,58 @@ const Weather = {
             return null;
         }
     },
+
+    async loadForecast(region = this.currentRegion, days = 7) {
+        const key = region + '_fc';
+        const cached = this.forecastCache[key];
+        if (cached && Date.now() - cached.ts < 10800000) return cached.data; // 3 ساعات
+
+        const [lat, lon] = region.split(',');
+        try {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=Africa/Cairo&forecast_days=${days}`);
+            const d = await res.json();
+            const daysData = d.daily.time.map((date, i) => ({
+                date,
+                tempMax: d.daily.temperature_2m_max[i],
+                tempMin: d.daily.temperature_2m_min[i],
+                precipitation: d.daily.precipitation_sum[i],
+                weatherCode: d.daily.weathercode[i],
+                description: this.getWeatherDescription(d.daily.weathercode[i])
+            }));
+            this.forecastCache[key] = { ts: Date.now(), data: daysData };
+            return daysData;
+        } catch(e) {
+            return null;
+        }
+    },
+
+    getWeatherDescription(code) {
+        const map = {
+            0: '☀️ صافي',
+            1: '🌤 غائم جزئي',
+            2: '⛅ غائم',
+            3: '☁️ غائم كلياً',
+            45: '🌫 ضباب',
+            48: '🌫 ضباب متجمد',
+            51: '🌧 رذاذ خفيف',
+            53: '🌧 رذاذ',
+            55: '🌧 رذاذ كثيف',
+            61: '🌦 مطر خفيف',
+            63: '🌦 مطر',
+            65: '🌧 مطر غزير',
+            71: '❄️ ثلج خفيف',
+            73: '❄️ ثلج',
+            75: '❄️ ثلج كثيف',
+            80: '🌦 زخات مطر',
+            81: '🌧 زخات متوسطة',
+            82: '🌧 زخات عنيفة',
+            95: '⛈ عاصفة رعدية',
+            96: '⛈ عاصفة برد',
+            99: '⛈ عاصفة برد شديدة'
+        };
+        return map[code] || '❓ غير معروف';
+    },
+
     async getAlerts() {
         const w = await this.load();
         if (!w) return [];
@@ -47,6 +102,7 @@ const Weather = {
 
         return alerts;
     },
+
     async renderWidget(elId) {
         const w = await this.load();
         if (!w) return null;
@@ -58,4 +114,4 @@ const Weather = {
         const hOk = w.hum >= rec.hn && w.hum <= rec.hx;
         return { w, rec, tOk, hOk, avg };
     }
-};
+}; 
