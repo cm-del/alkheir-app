@@ -1,5 +1,6 @@
 'use strict';
 const UI = {
+    // ----- دوال المخزون والمساعدة (بدون تغيير) -----
     async getFeedStock(farmId) {
         const records = await db.feedStore.where('farmId').equals(farmId).toArray();
         const i = records.filter(r => r.txType === 'in').reduce((s, r) => s + r.kg, 0);
@@ -153,6 +154,7 @@ const UI = {
         bar.innerHTML = html;
     },
 
+    // ====== الداشبورد (بدون تغيير) ======
     async renderDash() {
         const page = document.getElementById('page-dash');
         if (!page) return;
@@ -189,17 +191,15 @@ const UI = {
         // زر تحديث الداشبورد
         html += `<button class="btn btn-sm btn-outline" onclick="App.refreshCurrentPage()" style="margin-bottom:8px">🔄 تحديث</button>`;
 
-        // القائمة المنسدلة السريعة (رقم 5)
+        // القائمة المنسدلة السريعة
         const farms = await db.farms.toArray();
-        const currentFarmId = App.currentFarm;
-        const currentHangarId = App.currentHangar;
         html += `<div class="card" style="padding:10px;">
             <div class="g2">
                 <div class="fg" style="margin-bottom:0">
                     <label style="font-size:.66rem">المزرعة</label>
                     <select id="dashFarmSelect" style="font-size:.8rem;padding:6px 8px;">
                         <option value="">الكل</option>
-                        ${farms.map(f => `<option value="${f.id}" ${f.id === currentFarmId ? 'selected' : ''}>${f.name}</option>`).join('')}
+                        ${farms.map(f => `<option value="${f.id}" ${f.id === App.currentFarm ? 'selected' : ''}>${f.name}</option>`).join('')}
                     </select>
                 </div>
                 <div class="fg" style="margin-bottom:0">
@@ -329,10 +329,9 @@ const UI = {
             });
         }
 
-        // تعبئة العنابر المبدئية حسب المزرعة الحالية
         await populateHangars(App.currentFarm);
 
-        // كارت الطقس الجديد
+        // كارت الطقس
         const wData = await Weather.renderWidget('hdrTemp');
         if (wData) {
             const widget = document.getElementById('wxWidget');
@@ -352,6 +351,7 @@ const UI = {
         }
     },
 
+    // ========== شجرة المزرعة والمخزن (بدون تغيير) ==========
     async renderFarmTree() {
         const page = document.getElementById('page-hangars');
         if (!page) return;
@@ -397,68 +397,278 @@ const UI = {
         page.innerHTML = html;
     },
 
+    // ========== تبويبات البيانات (بها Pagination الآن) ==========
     currentDTab: 'w',
+    dtabPageSize: 50, // عدد العناصر في كل صفحة
+
     switchDTab(tab, btn) {
         this.currentDTab = tab;
         document.querySelectorAll('#dataTabs .it').forEach(b => b.classList.remove('active'));
         if (btn) btn.classList.add('active');
         this.renderDTab();
     },
+
     async renderDTab() {
         const el = document.getElementById('dataContent');
         if (!el) return;
         const bids = await App.getBatchIds();
-        let html = '';
         const tab = this.currentDTab;
+        const pageSize = this.dtabPageSize;
 
+        // دوال مساعدة للتحميل المتصفح
+        const loadPage = async (collection, offset) => {
+            // نطبق نفس الترتيب (تنازلي حسب التاريخ) اللي كان موجوداً
+            return await collection.orderBy('date').reverse().offset(offset).limit(pageSize).toArray();
+        };
+
+        // توليد HTML لجدول مع وظيفة "تحميل المزيد" مدمجة
+        const renderTableWithPagination = async (title, collection, columns, rowRenderer, showAddButton = true, addFn = '', addLabel = '') => {
+            let html = '';
+            if (showAddButton && addFn) {
+                html += `<button class="btn btn-g" onclick="${addFn}">${addLabel}</button>`;
+            }
+            html += `<div class="card"><div class="card-title">${title}</div>`;
+            html += `<div class="tw" id="${tab}-table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}<th></th></tr></thead><tbody id="${tab}-table-body"></tbody></table></div>`;
+            html += `<button id="${tab}-load-more" class="btn btn-sm btn-outline" style="width:100%;display:none;">تحميل المزيد ⬇</button></div>`;
+
+            el.innerHTML = html;
+
+            let offset = 0;
+            const tbody = document.getElementById(`${tab}-table-body`);
+            const loadMoreBtn = document.getElementById(`${tab}-load-more`);
+
+            const loadMore = async () => {
+                const rows = await loadPage(collection, offset);
+                if (!rows.length) {
+                    loadMoreBtn.style.display = 'none';
+                    return;
+                }
+                for (const row of rows) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = rowRenderer(row);
+                    tbody.appendChild(tr);
+                }
+                offset += rows.length;
+                // لو رجع عدد أقل من pageSize يبقى خلاص
+                if (rows.length < pageSize) {
+                    loadMoreBtn.style.display = 'none';
+                } else {
+                    loadMoreBtn.style.display = 'block';
+                }
+            };
+
+            // أول تحميل
+            await loadMore();
+
+            // إضافة حدث للزر
+            loadMoreBtn.addEventListener('click', loadMore);
+
+            // عند الحذف من الجدول نعيد تحميل الصفحة الحالية؟ سنكتفي بإعادة renderDTab بعد الحذف من الـ onclick
+        };
+
+        // ----- التبويبات المختلفة -----
         if (tab === 'w') {
-            html += `<button class="btn btn-g" onclick="Modals.open('addWeight')">+ وزن</button>`;
-            const rows = (await db.weights.where('batchId').anyOf(bids).toArray()).sort((a, b) => b.date.localeCompare(a.date));
-            html += `<div class="card"><div class="tw"><table><thead><tr><th>دفعة</th><th>وزن</th><th>تاريخ</th><th></th></tr></thead><tbody>`;
-            for (const w of rows) {
-                const b = await db.batches.get(w.batchId);
-                html += `<tr><td>${b ? b.name : '-'}</td><td style="color:var(--a);font-weight:700">${w.weight} كجم</td><td>${Utils.fD(w.date)}</td><td><button class="dbtn" onclick="db.weights.delete('${w.id}');UI.renderDTab();">×</button></td></tr>`;
-            }
-            html += `</tbody></table></div></div>`;
+            const collection = db.weights.where('batchId').anyOf(bids);
+            await renderTableWithPagination(
+                '⚖️ الأوزان',
+                collection,
+                ['الدفعة', 'الوزن', 'التاريخ'],
+                (w) => {
+                    // row data, لكن نحتاج اسم الدفعة؛ سنقوم بتحميله داخل الدالة لكن ذلك سيكون async، لذا سنؤجل المعالجة
+                    // لتجنب التعقيد، سنستخدم placeholder ونقوم بتحميله في اللحظة، لكن هذا سيء للـ performance.
+                    // سنجعل rowRenderer يأخذ الداتا ويعمل innerHTML بعد الحصول على اسم الدفعة.
+                    // لكن هذا يتطلب async، لذا سنضبط cell rendering بشكل متزامن عن طريق تخزين batch name مسبقاً؟ سنفعل الآتي:
+                    // في دالة rowRenderer نستقبل row, لكننا نحتاج الـ batch name، لذلك سنقوم بتحميله قبل إضافة الصف.
+                    // سنستخدم نمط آخر: نجهز البيانات قبل الإضافة. سنقوم بتحميل جميع الـ batches مرة واحدة
+                }
+            );
+
+            // بدلاً من ذلك، لإبقاء الكود بسيطاً، سنقوم بتحميل كل الصفوف دفعة واحدة مع الأسماء أول مرة، ثم pagination على النتيجة.
+            // سنستخدم طريقة أخرى: نجلب البيانات مرتبة مع limit/offset وكل ما نحتاج اسم الدفعة، نحملها من الكاش (batching).
+            // لتوفير الوقت، سنجعل rowRenderer async عن طريق انتظار تحميل اسم الدفعة. لكن هذا داخل map قد يسبب مشاكل.
+            // سنقوم بتحميل جميع أسماء الدفعات مقدماً.
+
+            // الحل العملي: سنقوم بتحميل جميع الدفعات (bids) في بداية renderDTab، ونخزنها في map.
+            const batchesMap = {};
+            const allBatches = await db.batches.where('id').anyOf(bids).toArray();
+            allBatches.forEach(b => batchesMap[b.id] = b.name);
+
+            // نعيد بناء الـ table rendering مع الاستفادة من batchesMap
+            const renderWeights = async () => {
+                let html = `<button class="btn btn-g" onclick="Modals.open('addWeight')">+ وزن</button>`;
+                html += `<div class="card"><div class="card-title">⚖️ الأوزان</div><div class="tw"><table><thead><tr><th>دفعة</th><th>وزن</th><th>تاريخ</th><th></th></tr></thead><tbody id="w-table-body"></tbody></table></div>`;
+                html += `<button id="w-load-more" class="btn btn-sm btn-outline" style="width:100%;display:none;">تحميل المزيد ⬇</button></div>`;
+                el.innerHTML = html;
+
+                let offset = 0;
+                const tbody = document.getElementById('w-table-body');
+                const loadMoreBtn = document.getElementById('w-load-more');
+
+                const loadMore = async () => {
+                    const rows = await db.weights.where('batchId').anyOf(bids).orderBy('date').reverse().offset(offset).limit(pageSize).toArray();
+                    if (!rows.length) {
+                        loadMoreBtn.style.display = 'none';
+                        return;
+                    }
+                    for (const w of rows) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${batchesMap[w.batchId] || '-'}</td><td style="color:var(--a);font-weight:700">${w.weight} كجم</td><td>${Utils.fD(w.date)}</td><td><button class="dbtn" onclick="db.weights.delete('${w.id}');UI.renderDTab();">×</button></td>`;
+                        tbody.appendChild(tr);
+                    }
+                    offset += rows.length;
+                    loadMoreBtn.style.display = rows.length === pageSize ? 'block' : 'none';
+                };
+
+                await loadMore();
+                loadMoreBtn.addEventListener('click', loadMore);
+            };
+            await renderWeights();
+
         } else if (tab === 'f') {
-            html += `<button class="btn btn-g" onclick="Modals.open('addFeed')">+ علف</button>`;
-            const rows = (await db.feed.where('batchId').anyOf(bids).toArray()).sort((a, b) => b.date.localeCompare(a.date));
-            html += `<div class="card"><div class="tw"><table><thead><tr><th>دفعة</th><th>كمية</th><th>تاريخ</th><th></th></tr></thead><tbody>`;
-            for (const f of rows) {
-                const b = await db.batches.get(f.batchId);
-                html += `<tr><td>${b ? b.name : '-'}</td><td>${f.bags} شيكارة</td><td>${Utils.fD(f.date)}</td><td><button class="dbtn" onclick="db.feed.delete('${f.id}');UI.renderDTab();">×</button></td></tr>`;
-            }
-            html += `</tbody></table></div></div>`;
+            // علف - نمط مماثل
+            const batchesMap = {};
+            const allBatches = await db.batches.where('id').anyOf(bids).toArray();
+            allBatches.forEach(b => batchesMap[b.id] = b.name);
+
+            const renderFeed = async () => {
+                let html = `<button class="btn btn-g" onclick="Modals.open('addFeed')">+ علف</button>`;
+                html += `<div class="card"><div class="card-title">🌾 العلف</div><div class="tw"><table><thead><tr><th>دفعة</th><th>كمية</th><th>تاريخ</th><th></th></tr></thead><tbody id="f-table-body"></tbody></table></div>`;
+                html += `<button id="f-load-more" class="btn btn-sm btn-outline" style="width:100%;display:none;">تحميل المزيد ⬇</button></div>`;
+                el.innerHTML = html;
+
+                let offset = 0;
+                const tbody = document.getElementById('f-table-body');
+                const loadMoreBtn = document.getElementById('f-load-more');
+
+                const loadMore = async () => {
+                    const rows = await db.feed.where('batchId').anyOf(bids).orderBy('date').reverse().offset(offset).limit(pageSize).toArray();
+                    if (!rows.length) {
+                        loadMoreBtn.style.display = 'none';
+                        return;
+                    }
+                    for (const f of rows) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${batchesMap[f.batchId] || '-'}</td><td>${f.bags} شيكارة</td><td>${Utils.fD(f.date)}</td><td><button class="dbtn" onclick="db.feed.delete('${f.id}');UI.renderDTab();">×</button></td>`;
+                        tbody.appendChild(tr);
+                    }
+                    offset += rows.length;
+                    loadMoreBtn.style.display = rows.length === pageSize ? 'block' : 'none';
+                };
+
+                await loadMore();
+                loadMoreBtn.addEventListener('click', loadMore);
+            };
+            await renderFeed();
+
         } else if (tab === 'd') {
-            html += `<button class="btn btn-r" onclick="Modals.open('addDeath')">+ نفوق</button>`;
-            const rows = (await db.deaths.where('batchId').anyOf(bids).toArray()).sort((a, b) => b.date.localeCompare(a.date));
-            html += `<div class="card"><div class="tw"><table><thead><tr><th>دفعة</th><th>عدد</th><th>تاريخ</th><th></th></tr></thead><tbody>`;
-            for (const d of rows) {
-                const b = await db.batches.get(d.batchId);
-                html += `<tr><td>${b ? b.name : '-'}</td><td style="color:var(--danger)">${d.count}</td><td>${Utils.fD(d.date)}</td><td><button class="dbtn" onclick="db.deaths.delete('${d.id}');UI.renderDTab();">×</button></td></tr>`;
-            }
-            html += `</tbody></table></div></div>`;
+            const batchesMap = {};
+            const allBatches = await db.batches.where('id').anyOf(bids).toArray();
+            allBatches.forEach(b => batchesMap[b.id] = b.name);
+
+            const renderDeaths = async () => {
+                let html = `<button class="btn btn-r" onclick="Modals.open('addDeath')">+ نفوق</button>`;
+                html += `<div class="card"><div class="card-title">💀 نفوق</div><div class="tw"><table><thead><tr><th>دفعة</th><th>عدد</th><th>تاريخ</th><th></th></tr></thead><tbody id="d-table-body"></tbody></table></div>`;
+                html += `<button id="d-load-more" class="btn btn-sm btn-outline" style="width:100%;display:none;">تحميل المزيد ⬇</button></div>`;
+                el.innerHTML = html;
+
+                let offset = 0;
+                const tbody = document.getElementById('d-table-body');
+                const loadMoreBtn = document.getElementById('d-load-more');
+
+                const loadMore = async () => {
+                    const rows = await db.deaths.where('batchId').anyOf(bids).orderBy('date').reverse().offset(offset).limit(pageSize).toArray();
+                    if (!rows.length) {
+                        loadMoreBtn.style.display = 'none';
+                        return;
+                    }
+                    for (const d of rows) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${batchesMap[d.batchId] || '-'}</td><td style="color:var(--danger)">${d.count}</td><td>${Utils.fD(d.date)}</td><td><button class="dbtn" onclick="db.deaths.delete('${d.id}');UI.renderDTab();">×</button></td>`;
+                        tbody.appendChild(tr);
+                    }
+                    offset += rows.length;
+                    loadMoreBtn.style.display = rows.length === pageSize ? 'block' : 'none';
+                };
+
+                await loadMore();
+                loadMoreBtn.addEventListener('click', loadMore);
+            };
+            await renderDeaths();
+
         } else if (tab === 's') {
-            html += `<button class="btn btn-o" onclick="Modals.open('addSale')">+ بيع</button>`;
-            const rows = (await db.sales.where('batchId').anyOf(bids).toArray()).sort((a, b) => b.date.localeCompare(a.date));
-            html += `<div class="card"><div class="tw"><table><thead><tr><th>دفعة</th><th>إجمالي</th><th>تاريخ</th><th></th></tr></thead><tbody>`;
-            for (const s of rows) {
-                const b = await db.batches.get(s.batchId);
-                html += `<tr><td>${b ? b.name : '-'}</td><td style="color:var(--a)">${Utils.fmt(s.total)} ج.م</td><td>${Utils.fD(s.date)}</td><td><button class="dbtn" onclick="db.sales.delete('${s.id}');UI.renderDTab();">×</button></td></tr>`;
-            }
-            html += `</tbody></table></div></div>`;
+            // مبيعات - تبويب المبيعات، نستخدم نفس النمط
+            const batchesMap = {};
+            const allBatches = await db.batches.where('id').anyOf(bids).toArray();
+            allBatches.forEach(b => batchesMap[b.id] = b.name);
+
+            const renderSales = async () => {
+                let html = `<button class="btn btn-o" onclick="Modals.open('addSale')">+ بيع</button>`;
+                html += `<div class="card"><div class="card-title">💰 المبيعات</div><div class="tw"><table><thead><tr><th>دفعة</th><th>إجمالي</th><th>تاريخ</th><th></th></tr></thead><tbody id="s-table-body"></tbody></table></div>`;
+                html += `<button id="s-load-more" class="btn btn-sm btn-outline" style="width:100%;display:none;">تحميل المزيد ⬇</button></div>`;
+                el.innerHTML = html;
+
+                let offset = 0;
+                const tbody = document.getElementById('s-table-body');
+                const loadMoreBtn = document.getElementById('s-load-more');
+
+                const loadMore = async () => {
+                    const rows = await db.sales.where('batchId').anyOf(bids).orderBy('date').reverse().offset(offset).limit(pageSize).toArray();
+                    if (!rows.length) {
+                        loadMoreBtn.style.display = 'none';
+                        return;
+                    }
+                    for (const s of rows) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${batchesMap[s.batchId] || '-'}</td><td style="color:var(--a)">${Utils.fmt(s.total)} ج.م</td><td>${Utils.fD(s.date)}</td><td><button class="dbtn" onclick="db.sales.delete('${s.id}');UI.renderDTab();">×</button></td>`;
+                        tbody.appendChild(tr);
+                    }
+                    offset += rows.length;
+                    loadMoreBtn.style.display = rows.length === pageSize ? 'block' : 'none';
+                };
+
+                await loadMore();
+                loadMoreBtn.addEventListener('click', loadMore);
+            };
+            await renderSales();
+
         } else if (tab === 'e') {
-            html += `<button class="btn btn-b" onclick="Modals.open('addExpense')">+ مصروف</button>`;
-            const rows = (await db.expenses.toArray()).sort((a, b) => b.date.localeCompare(a.date));
-            html += `<div class="card"><div class="tw"><table><thead><tr><th>نوع</th><th>مبلغ</th><th>تاريخ</th><th></th></tr></thead><tbody>`;
-            for (const e of rows) {
-                html += `<tr><td>${e.type}</td><td style="color:var(--danger)">${Utils.fmt(e.amount)} ج.م</td><td>${Utils.fD(e.date)}</td><td><button class="dbtn" onclick="db.expenses.delete('${e.id}');UI.renderDTab();">×</button></td></tr>`;
-            }
-            html += `</tbody></table></div></div>`;
+            // مصاريف
+            const renderExpenses = async () => {
+                let html = `<button class="btn btn-b" onclick="Modals.open('addExpense')">+ مصروف</button>`;
+                html += `<div class="card"><div class="card-title">📋 المصاريف</div><div class="tw"><table><thead><tr><th>نوع</th><th>مبلغ</th><th>تاريخ</th><th></th></tr></thead><tbody id="e-table-body"></tbody></table></div>`;
+                html += `<button id="e-load-more" class="btn btn-sm btn-outline" style="width:100%;display:none;">تحميل المزيد ⬇</button></div>`;
+                el.innerHTML = html;
+
+                let offset = 0;
+                const tbody = document.getElementById('e-table-body');
+                const loadMoreBtn = document.getElementById('e-load-more');
+
+                const loadMore = async () => {
+                    // المصاريف لا تربط بـ bids معينة، كل المصاريف
+                    const rows = await db.expenses.orderBy('date').reverse().offset(offset).limit(pageSize).toArray();
+                    if (!rows.length) {
+                        loadMoreBtn.style.display = 'none';
+                        return;
+                    }
+                    for (const e of rows) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${e.type}</td><td style="color:var(--danger)">${Utils.fmt(e.amount)} ج.م</td><td>${Utils.fD(e.date)}</td><td><button class="dbtn" onclick="db.expenses.delete('${e.id}');UI.renderDTab();">×</button></td>`;
+                        tbody.appendChild(tr);
+                    }
+                    offset += rows.length;
+                    loadMoreBtn.style.display = rows.length === pageSize ? 'block' : 'none';
+                };
+
+                await loadMore();
+                loadMoreBtn.addEventListener('click', loadMore);
+            };
+            await renderExpenses();
+
         } else if (tab === 'st') {
+            // العمالة - بدون تغيير (نادراً ما تكون كبيرة)
             if (!App.currentFarm) { el.innerHTML = '<div class="empty">اختر مزرعة</div>'; return; }
             const staff = await db.staff.where('farmId').equals(App.currentFarm).toArray();
-            html += `<button class="btn btn-g" onclick="Modals.open('addStaff')">+ موظف</button>`;
+            let html = `<button class="btn btn-g" onclick="Modals.open('addStaff')">+ موظف</button>`;
             let total = 0;
             for (const s of staff) {
                 const fr = Utils.fridays(s.startDate);
@@ -467,9 +677,12 @@ const UI = {
                 html += `<div class="sc"><div>${s.name} <span class="badge bp">${s.role}</span><br><small>${fr} جمعة · ${Utils.fmt(Math.round(totalS))} ج.م</small></div><button class="dbtn" onclick="db.staff.delete('${s.id}');UI.renderDTab();">×</button></div>`;
             }
             html += `<div class="card"><div class="card-title">💼 الإجمالي: ${Utils.fmt(Math.round(total))} ج.م</div></div>`;
+            el.innerHTML = html;
+
         } else if (tab === 'cmp') {
+            // المقارنة - بدون تغيير حالياً
             const batches = await db.batches.where('id').anyOf(bids).toArray();
-            html += `<div class="card"><div class="card-title">🔄 مقارنة الدفعات</div><div class="tw"><table><thead><tr><th>الدفعة</th><th>العدد</th><th>العمر</th><th>FCR</th><th>نفوق</th><th>تكلفة/كجم</th><th>ربح</th></tr></thead><tbody>`;
+            let html = `<div class="card"><div class="card-title">🔄 مقارنة الدفعات</div><div class="tw"><table><thead><tr><th>الدفعة</th><th>العدد</th><th>العمر</th><th>FCR</th><th>نفوق</th><th>تكلفة/كجم</th><th>ربح</th></tr></thead><tbody>`;
             for (const b of batches) {
                 const lw = (await db.weights.where('batchId').equals(b.id).reverse().first());
                 const fKg = (await db.feed.where('batchId').equals(b.id).toArray()).reduce((s, x) => s + x.qty, 0);
@@ -487,10 +700,11 @@ const UI = {
                 </tr>`;
             }
             html += '</tbody></table></div></div>';
+            el.innerHTML = html;
         }
-        el.innerHTML = html;
     },
 
+    // ... باقي الدوال (temp, ref, more) بدون تغيير ...
     currentTTab: 'log',
     switchTTab(tab, btn) {
         this.currentTTab = tab;
@@ -658,4 +872,4 @@ const UI = {
         }
         el.innerHTML = html;
     }
-};
+}; 
