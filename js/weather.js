@@ -22,6 +22,31 @@ const Weather = {
             return null;
         }
     },
+    async getAlerts() {
+        const w = await this.load();
+        if (!w) return [];
+
+        const activeBatches = await db.batches.where('active').equals(1).toArray();
+        if (!activeBatches.length) return [];
+
+        const avgAge = Math.round(activeBatches.reduce((s, b) => s + Utils.dAge(b.date), 0) / activeBatches.length);
+        const rec = Utils.idealRec(avgAge);
+
+        const alerts = [];
+        if (w.temp > rec.mx) {
+            alerts.push(`⚠️ إجهاد حراري: الحرارة ${w.temp}°C أعلى من المثالي (${rec.mn}–${rec.mx}°C)`);
+        } else if (w.temp < rec.mn) {
+            alerts.push(`❄️ انخفاض حرارة: الحرارة ${w.temp}°C أقل من المثالي (${rec.mn}–${rec.mx}°C)`);
+        }
+
+        if (w.hum > rec.hx) {
+            alerts.push(`💧 رطوبة مرتفعة: ${w.hum}% (المثالي ${rec.hn}–${rec.hx}%)`);
+        } else if (w.hum < rec.hn) {
+            alerts.push(`🏜️ رطوبة منخفضة: ${w.hum}% (المثالي ${rec.hn}–${rec.hx}%)`);
+        }
+
+        return alerts;
+    },
     async renderWidget(elId) {
         const w = await this.load();
         if (!w) return null;
