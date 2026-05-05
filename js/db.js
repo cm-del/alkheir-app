@@ -21,8 +21,8 @@ db.version(2).stores({
     settings: 'key'
 });
 
-// دوال التحقق من صحة البيانات
 const Validator = {
+    // الحقول المطلوبة
     requiredFields: {
         farms: ['id', 'name'],
         hangars: ['id', 'name', 'farmId'],
@@ -41,19 +41,60 @@ const Validator = {
         agenda: ['id', 'date']
     },
 
+    // نوع كل حقل (للتأكد من القيم)
+    types: {
+        farms: { id: 'string', name: 'string', loc: 'string' },
+        hangars: { id: 'string', name: 'string', farmId: 'string', cap: 'number', area: 'number', windows: 'number', fans: 'number', fanCap: 'number' },
+        batches: { id: 'string', name: 'string', hangarId: 'string', count: 'number', startCount: 'number', date: 'string', price: 'number', target: 'number', active: 'boolean' },
+        weights: { id: 'string', batchId: 'string', weight: 'number', date: 'string', note: 'string' },
+        feed: { id: 'string', batchId: 'string', bags: 'number', qty: 'number', date: 'string', type: 'string', cost: 'number' },
+        deaths: { id: 'string', batchId: 'string', count: 'number', date: 'string', period: 'string', reason: 'string' },
+        sales: { id: 'string', batchId: 'string', count: 'number', weight: 'number', price: 'number', total: 'number', date: 'string' },
+        expenses: { id: 'string', batchId: 'string', type: 'string', amount: 'number', date: 'string', note: 'string' },
+        feedStore: { id: 'string', farmId: 'string', date: 'string', bags: 'number', kg: 'number', txType: 'string', feedType: 'string', pricePerTon: 'number', note: 'string', batchId: 'string' },
+        staff: { id: 'string', farmId: 'string', name: 'string', role: 'string', allowance: 'number', advance: 'number', startDate: 'string' },
+        tempLogs: { id: 'string', hangarId: 'string', temp: 'number', hum: 'number', date: 'string', time: 'string', note: 'string' },
+        marketPrices: { id: 'string', type: 'string', price: 'number', date: 'string' },
+        clients: { id: 'string', name: 'string', phone: 'string' },
+        clientSales: { id: 'string', clientId: 'string', amount: 'number', date: 'string', paid: 'boolean' },
+        agenda: { id: 'string', type: 'string', date: 'string', note: 'string', done: 'boolean' }
+    },
+
     validate(table, data) {
         const required = this.requiredFields[table];
-        if (!required) return true; // الجداول غير المعروفة تمر بدون تحقق
+        if (!required) return true;
 
+        // فحص الوجود
         for (const field of required) {
             if (data[field] === undefined || data[field] === null || data[field] === '') {
                 console.error(`❌ تحقق فشل في ${table}: الحقل "${field}" مطلوب.`, data);
-                Utils.toast(`بيانات ناقصة: ${field}`, 'error');
+                if (typeof Utils !== 'undefined') Utils.toast(`بيانات ناقصة: ${field}`, 'error');
                 return false;
             }
         }
 
-        // تحقق إضافي للأنواع الرقمية
+        // فحص الأنواع
+        const typeMap = this.types[table];
+        if (typeMap) {
+            for (const [field, expectedType] of Object.entries(typeMap)) {
+                if (data[field] === undefined || data[field] === null) continue; // الحقول الاختيارية تمر
+
+                let actualType = typeof data[field];
+                if (actualType === 'object') actualType = 'null'; // لا نسمح بـ null أو object
+
+                if (actualType !== expectedType && !(expectedType === 'number' && actualType === 'string' && !isNaN(Number(data[field])))) {
+                    console.error(`❌ خطأ في نوع الحقل "${field}" في ${table}: المتوقع ${expectedType}، الموجود ${actualType}.`, data);
+                    if (typeof Utils !== 'undefined') Utils.toast(`نوع بيانات خاطئ: ${field}`, 'error');
+                    return false;
+                }
+                // تحويل الأرقام النصية إلى رقم
+                if (expectedType === 'number' && actualType === 'string') {
+                    data[field] = Number(data[field]);
+                }
+            }
+        }
+
+        // تحقق إضافي للقيم الإيجابية
         if (table === 'batches' && (isNaN(data.count) || data.count <= 0)) {
             Utils.toast('عدد الطيور يجب أن يكون رقماً موجباً', 'error');
             return false;
@@ -118,4 +159,4 @@ async function migrateFromLocalStorage() {
     if (data.agenda) await db.agenda.bulkPut(data.agenda);
     localStorage.removeItem('akh_v9');
     console.log('تم ترحيل البيانات');
-                    } 
+        } 
