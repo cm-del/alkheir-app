@@ -52,6 +52,20 @@ body {
     overflow-x: hidden;
 }
 
+/* نمط خلفية متحرك للداشبورد */
+#page-dash {
+    background-image: radial-gradient(circle at 20% 30%, rgba(0,226,114,0.03) 0%, transparent 30%),
+                      radial-gradient(circle at 80% 70%, rgba(56,182,255,0.03) 0%, transparent 30%),
+                      radial-gradient(circle at 50% 90%, rgba(255,183,3,0.02) 0%, transparent 30%);
+    background-attachment: fixed;
+    animation: bgShift 12s ease-in-out infinite alternate;
+}
+
+@keyframes bgShift {
+    0% { background-position: 0% 0%, 100% 100%, 50% 90%; }
+    100% { background-position: 2% 1%, 98% 99%, 52% 88%; }
+}
+
 .hdr {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -219,7 +233,9 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--surface);
+    background: linear-gradient(to top, var(--surface), rgba(14,31,20,0.85));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid var(--border);
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -245,6 +261,7 @@ body {
 
 .ni.active {
     color: var(--a);
+    text-shadow: 0 0 8px rgba(0,226,114,0.5);
 }
 
 .ni-i {
@@ -572,6 +589,25 @@ tr:last-child td {
     border-radius: 20px;
     background: linear-gradient(90deg, var(--a), #00ff88);
     transition: width .5s;
+    position: relative;
+    overflow: hidden;
+}
+
+/* حركة متحركة لشريط التقدم */
+.pb::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: pbShine 2s ease-in-out infinite;
+}
+
+@keyframes pbShine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 .mo {
@@ -806,6 +842,15 @@ tr:last-child td {
     border-radius: var(--r);
     padding: 13px;
     margin-bottom: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+/* تأثير hover على كروت الدفعات */
+.bc:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border-color: var(--a);
 }
 
 .photo-grid {
@@ -1039,7 +1084,7 @@ tr:last-child td {
     }
 }
 
-/* =====  تأثير نبض التنبيهات  ===== */
+/* تأثير نبض التنبيهات */
 @keyframes pulse-warn {
     0% { box-shadow: 0 0 0 0 rgba(255,59,92,0.4); }
     70% { box-shadow: 0 0 0 6px rgba(255,59,92,0); }
@@ -1050,4 +1095,4 @@ tr:last-child td {
 }
 .stock.low {
     animation: pulse-warn 2s infinite;
-}
+} 
