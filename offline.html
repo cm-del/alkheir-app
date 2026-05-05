@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>الخير - غير متصل</title>
+    <style>
+        :root{--bg:#070f0a;--text:#dff5e8;--a:#00e272;--surface:#0e1f14;--border:#1c3424}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Cairo','Tajawal',sans-serif;direction:rtl}
+        .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;text-align:center;max-width:320px;width:90%}
+        .icon{font-size:4rem;margin-bottom:10px}
+        h2{color:var(--a);margin-bottom:8px}
+        p{color:#4a7a5e;font-size:0.9rem}
+        button{margin-top:16px;padding:10px 24px;background:var(--a);color:#050e08;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif}
+        .status{font-size:0.75rem;color:var(--a);margin-top:12px}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">🐔</div>
+        <h2>أنت غير متصل</h2>
+        <p>التطبيق يعمل محلياً لكن الطقس والميزات الحية تحتاج اتصالاً.</p>
+        <button onclick="location.reload()">إعادة المحاولة</button>
+        <div class="status" id="reconnect-status">⏳ جاري البحث عن اتصال كل 5 ثوانٍ...</div>
+    </div>
+
+    <script>
+        // التحقق دورياً من عودة الاتصال
+        setInterval(() => {
+            if (navigator.onLine) {
+                window.location.href = 'index.html';
+            }
+        }, 5000);
+    </script>
+</body>
+</html> 
