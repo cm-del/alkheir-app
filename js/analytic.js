@@ -47,5 +47,18 @@ const Analytics = {
             revenue: totalSales,
             profit: totalSales - totalCost
         };
+    },
+    async getMortalityRate(batchId) {
+        const batch = await db.batches.get(batchId);
+        if (!batch) return null;
+        const startCount = batch.startCount || batch.count;
+        if (!startCount || startCount <= 0) return null;
+        const totalDeaths = (await db.deaths.where('batchId').equals(batchId).toArray()).reduce((s,d)=>s+d.count,0);
+        return {
+            startCount,
+            totalDeaths,
+            percentage: +((totalDeaths / startCount) * 100).toFixed(2),
+            alive: startCount - totalDeaths
+        };
     }
-};
+}; 
