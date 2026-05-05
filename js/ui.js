@@ -186,10 +186,23 @@ const UI = {
 
         let html = '';
 
+        // زر تحديث الداشبورد (رقم 3)
+        html += `<button class="btn btn-sm btn-outline" onclick="App.refreshCurrentPage()" style="margin-bottom:8px">🔄 تحديث</button>`;
+
         if (App.currentFarm) {
             const stock = await this.getFeedStock(App.currentFarm);
             if (stock && stock.bags < 10) html += `<div class="alert">⚠️ مخزن منخفض: ${stock.bags.toFixed(1)} شيكارة</div>`;
+
+            // شريط تقدم المخزن (رقم 4)
+            const maxBags = 100; // سعة تقديرية قصوى للشيكاير
+            const percent = Math.min(100, (stock.bags / maxBags) * 100);
+            html += `<div class="card" style="margin-bottom:10px">
+                <div class="card-title">📦 مستوى المخزن</div>
+                <div class="pb-w"><div class="pb" style="width:${percent}%"></div></div>
+                <small style="color:var(--muted)">${stock.bags.toFixed(1)} من ${maxBags} شيكارة (${percent.toFixed(0)}%)</small>
+            </div>`;
         }
+
         for (const b of batches) {
             const bDeathsWeek = (await db.deaths.where('batchId').equals(b.id).and(d => d.date >= waStr).toArray()).reduce((s, d) => s + d.count, 0);
             if (b.startCount && (bDeathsWeek / b.startCount) * 100 >= 3) html += `<div class="alert">⚠️ ${b.name}: نفوق مرتفع</div>`;
@@ -217,7 +230,7 @@ const UI = {
 
         html += `<div id="wxWidget"></div>`;
 
-        // 📈 توقعات البيع الجديدة
+        // توقعات البيع
         const predictionsHtml = [];
         for (const b of batches) {
             const prediction = await Analytics.predictBestSellDate(b.id, b.target || 2.5);
@@ -263,12 +276,22 @@ const UI = {
 
         page.innerHTML = html;
 
+        // كارت الطقس الجديد (رقم 5)
         const wData = await Weather.renderWidget('hdrTemp');
         if (wData) {
             const widget = document.getElementById('wxWidget');
             if (widget) {
                 const { w, rec, tOk, hOk, avg } = wData;
-                widget.innerHTML = `<div class="wx"><div class="rb"><div><div class="wx-t">${w.temp}°C</div><div>💧 ${w.hum}%</div></div><div><span class="badge ${tOk ? 'bg' : 'br'}">${tOk ? '✅' : '⚠️'} حرارة</span><br><span class="badge ${hOk ? 'bg' : 'by'}">${hOk ? '✅' : '⚠️'} رطوبة</span></div></div><div>مثالي لعمر ${avg} يوم: ${rec.mn}–${rec.mx}° / ${rec.hn}–${rec.hx}%</div></div>`;
+                const tempIcon = w.temp > rec.mx ? '🔥' : (w.temp < rec.mn ? '❄️' : '✅');
+                const humIcon = w.hum > rec.hx ? '💧' : (w.hum < rec.hn ? '🏜️' : '✅');
+                widget.innerHTML = `<div class="card" style="background:linear-gradient(135deg, #0c2415, #061728);border:1px solid var(--a);">
+                    <div class="card-title" style="color:var(--a2)">🌡 حالة الطقس للدواجن</div>
+                    <div class="g2">
+                        <div class="stat"><div class="sn">${w.temp}°C ${tempIcon}</div><div class="sl">حرارة</div></div>
+                        <div class="stat"><div class="sn">${w.hum}% ${humIcon}</div><div class="sl">رطوبة</div></div>
+                    </div>
+                    <div style="font-size:0.7rem;color:var(--muted);margin-top:6px">المثالي لعمر ${avg} يوم: ${rec.mn}–${rec.mx}° / ${rec.hn}–${rec.hx}%</div>
+                </div>`;
             }
         }
     },
@@ -579,4 +602,4 @@ const UI = {
         }
         el.innerHTML = html;
     }
-};
+}; 
