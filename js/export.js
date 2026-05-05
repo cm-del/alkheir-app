@@ -11,11 +11,52 @@ const Export = {
             const sl = (await db.sales.where('batchId').equals(b.id).toArray()).reduce((s,x)=>s+x.total,0);
             csv += `${b.name},${b.count},${b.date},${Utils.dAge(b.date)},${lw?lw.weight:0},${(fKg/KPB).toFixed(1)},${dc},${Math.round(sl)}\n`;
         }
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+        a.href = url;
         a.download = 'alkheir.csv';
         a.click();
+        URL.revokeObjectURL(url);
     },
+
+    async shareReport() {
+        const bids = await App.getBatchIds();
+        const batches = await db.batches.where('id').anyOf(bids).toArray();
+        let csv = '\uFEFFالدفعة,طيور,تاريخ,عمر,وزن,علف,نفوق,مبيعات\n';
+        for (const b of batches) {
+            const lw = (await db.weights.where('batchId').equals(b.id).reverse().sortBy('date'))[0];
+            const fKg = (await db.feed.where('batchId').equals(b.id).toArray()).reduce((s,x)=>s+x.qty,0);
+            const dc = (await db.deaths.where('batchId').equals(b.id).toArray()).reduce((s,d)=>s+d.count,0);
+            const sl = (await db.sales.where('batchId').equals(b.id).toArray()).reduce((s,x)=>s+x.total,0);
+            csv += `${b.name},${b.count},${b.date},${Utils.dAge(b.date)},${lw?lw.weight:0},${(fKg/KPB).toFixed(1)},${dc},${Math.round(sl)}\n`;
+        }
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+        const file = new File([blob], 'تقرير_الخير.csv', { type: 'text/csv' });
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'تقرير الخير للدواجن',
+                    files: [file]
+                });
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    Utils.toast('تعذرت المشاركة', 'error');
+                }
+            }
+        } else {
+            // لو مفيش Web Share API نحمّل الملف عادي
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'تقرير_الخير.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+            Utils.toast('تم تحميل التقرير (المشاركة غير مدعومة)', 'warning');
+        }
+    },
+
     async toPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
