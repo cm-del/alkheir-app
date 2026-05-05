@@ -7,18 +7,14 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐔</text></svg>">
     <link rel="manifest" href="manifest.json">
     
-    <!-- 3. تحسين سرعة التحميل Preload -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" href="css/style.css" as="style">
-    <link rel="preload" href="css/print.css" as="style" media="print">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;700;900&display=swap"></noscript>
-    
+    <!-- تحميل الخطوط مرة واحدة فقط مع swap لتجنب FOIT -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/print.css" media="print">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
-    <!-- 4. وسوم Open Graph للمشاركة -->
+    <!-- وسوم Open Graph للمشاركة -->
     <meta property="og:title" content="الخير للدواجن - النسخة المتقدمة">
     <meta property="og:description" content="منصة متطورة لإدارة مزارع الدواجن">
     <meta property="og:image" content="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🐔</text></svg>">
@@ -26,12 +22,11 @@
     <meta name="theme-color" content="#00e272">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-    <!-- 6. دعم البرنامج المساعد للرسم البياني -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 </head>
 <body>
 
-    <!-- 1. شاشة البداية Splash Screen -->
+    <!-- شاشة البداية Splash Screen -->
     <div id="splashScreen" style="position:fixed;inset:0;background:#070f0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity 0.6s ease;">
         <div style="font-size:4rem;margin-bottom:1rem;">🐔</div>
         <h2 style="color:#00e272;font-family:'Tajawal',sans-serif;">الخير للدواجن</h2>
@@ -44,7 +39,7 @@
             <div><div class="app-name">الخير للدواجن</div><div class="app-sub" id="hdrDate"></div></div>
         </div>
         <div class="hdr-r">
-            <!-- 2. زر تثبيت التطبيق PWA (مخفي بإفتراضي) -->
+            <!-- زر تثبيت التطبيق PWA (مخفي بإفتراضي) -->
             <button id="installBtn" class="chip" style="display:none;background:var(--a);color:#050e08;border:none;font-weight:600;">📲 تثبيت</button>
             <div class="chip" onclick="Modals.showWeather()">🌡 <span id="hdrTemp">--°</span></div>
             <div class="chip" onclick="Modals.showExport()">📤</div>
@@ -104,7 +99,7 @@
         <button class="ni" onclick="App.showPage('more',this)"><span class="ni-i">➕</span>المزيد</button>
     </nav>
 
-    <!-- 5. رسالة <noscript> -->
+    <!-- رسالة noscript -->
     <noscript>
         <div style="background:#ff3b5c;color:white;padding:12px;text-align:center;font-weight:bold;position:fixed;bottom:0;left:0;right:0;z-index:9999;">
             ⚠️ التطبيق يحتاج إلى تفعيل JavaScript ليعمل.
@@ -127,7 +122,7 @@
     <script src="js/notifications.js"></script>
 
     <script>
-        // 1. إخفاء شاشة البداية بعد 1.5 ثانية
+        // إخفاء شاشة البداية بعد 1.5 ثانية
         setTimeout(function() {
             const splash = document.getElementById('splashScreen');
             if (splash) {
@@ -136,7 +131,7 @@
             }
         }, 1500);
 
-        // 2. التعامل مع زر تثبيت التطبيق
+        // التعامل مع زر تثبيت التطبيق
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
         
