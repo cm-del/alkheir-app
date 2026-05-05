@@ -8,6 +8,10 @@
     --a3: #38b6ff;
     --danger: #ff3b5c;
     --purple: #b57bee;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --info: #0ea5e9;
+    --secondary: #6366f1;
     --text: #dff5e8;
     --muted: #4a7a5e;
     --border: #1c3424;
@@ -29,6 +33,10 @@
         --a3: #2563eb;
         --danger: #dc2626;
         --purple: #7c3aed;
+        --success: #059669;
+        --warning: #d97706;
+        --info: #2563eb;
+        --secondary: #4f46e5;
     }
 }
 
@@ -1095,4 +1103,4 @@ tr:last-child td {
 }
 .stock.low {
     animation: pulse-warn 2s infinite;
-} 
+    }
