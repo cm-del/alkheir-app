@@ -34,6 +34,38 @@ const Export = {
         });
         doc.save('تقرير_الخير.pdf');
     },
+    async batchReport(batchId) {
+        const b = await db.batches.get(batchId);
+        if (!b) return Utils.toast('الدفعة غير موجودة', 'error');
+        const weights = await db.weights.where('batchId').equals(batchId).toArray();
+        const feed = await db.feed.where('batchId').equals(batchId).toArray();
+        const deaths = await db.deaths.where('batchId').equals(batchId).toArray();
+        const sales = await db.sales.where('batchId').equals(batchId).toArray();
+        const expenses = await db.expenses.where('batchId').equals(batchId).toArray();
+        const costData = await Analytics.costPerKg(batchId);
+        const mortality = await Analytics.getMortalityRate(batchId);
+        const prediction = await Analytics.predictBestSellDate(batchId, b.target || 2.5);
+        
+        let report = `🐔 تقرير دفعة: ${b.name}\n`;
+        report += `📅 التاريخ: ${b.date} | العمر: ${Utils.dAge(b.date)} يوم\n`;
+        report += `🐥 العدد الحالي: ${b.count} (البداية: ${b.startCount})\n`;
+        report += `💀 نسبة النفوق: ${mortality ? mortality.percentage + '%' : 'غير متاح'}\n`;
+        report += `⚖️ آخر وزن: ${weights.length ? weights[weights.length-1].weight + ' كجم' : 'غير متاح'}\n`;
+        report += `🌾 إجمالي العلف: ${feed.reduce((s,x)=>s+x.qty,0)} كجم\n`;
+        report += `💰 إجمالي المبيعات: ${sales.reduce((s,x)=>s+x.total,0)} ج.م\n`;
+        report += `📋 إجمالي المصاريف: ${expenses.reduce((s,x)=>s+x.amount,0)} ج.م\n`;
+        if(costData) {
+            report += `💵 تكلفة الكيلو: ${costData.costPerKg.toFixed(2)} ج.م | الربح: ${costData.profit.toFixed(0)} ج.م\n`;
+        }
+        if(prediction) {
+            report += `📈 البيع المتوقع: ${prediction.date} (${prediction.daysNeeded} يوم)\n`;
+        }
+        const blob = new Blob([report], {type:'text/plain;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `تقرير_${b.name}.txt`;
+        a.click();
+    },
     async backupJSON() {
         const allData = {
             farms: await db.farms.toArray(),
