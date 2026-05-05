@@ -2,6 +2,7 @@
 const App = {
     currentFarm: null,
     currentHangar: null,
+    currentPage: 'dash',
     async init() {
         await migrateFromLocalStorage();
         const unlocked = await UI.checkLock();
@@ -16,6 +17,7 @@ const App = {
         Weather.load().then(w => { if (w) document.getElementById('hdrTemp').textContent = w.temp + '°'; });
     },
     async showPage(id, btn) {
+        this.currentPage = id;
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.ni').forEach(b => b.classList.remove('active'));
         const page = document.getElementById('page-' + id);
@@ -32,6 +34,9 @@ const App = {
             case 'ref': await UI.renderRef(); break;
             case 'more': await UI.renderMore(); break;
         }
+    },
+    async refreshCurrentPage() {
+        await this.showPage(this.currentPage);
     },
     setFarm(id) {
         this.currentFarm = id;
@@ -57,4 +62,4 @@ const App = {
         return batches.map(b => b.id);
     }
 };
-window.addEventListener('DOMContentLoaded', () => App.init());
+window.addEventListener('DOMContentLoaded', () => App.init()); 
