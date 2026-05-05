@@ -28,5 +28,20 @@ const Notifications = {
         const now = Date.now();
         const delay = target.getTime() - now;
         if (delay > 0) this.schedule(msg, delay);
+    },
+
+    async scheduleAgendaReminders() {
+        if (!(await this.requestPermission())) return;
+        const agenda = await db.agenda.where('done').equals(false).toArray();
+        const now = new Date();
+        const oneWeekFromNow = new Date();
+        oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+        for (const item of agenda) {
+            const itemDate = new Date(item.date);
+            if (itemDate >= now && itemDate <= oneWeekFromNow) {
+                const msg = `📅 ${item.type}: ${item.note || 'بدون ملاحظات'}`;
+                this.scheduleAt(msg, item.date, '08:00');
+            }
+        }
     }
 };
