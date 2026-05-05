@@ -21,6 +21,27 @@ db.version(2).stores({
     settings: 'key'
 });
 
+// تهيئة الإعدادات الافتراضية لو مش موجودة
+async function initDefaults() {
+    // وحدة الوزن الافتراضية (كجم)
+    if (!(await db.settings.get('weightUnit'))) {
+        await db.settings.put({ key: 'weightUnit', value: 'kg' });
+    }
+    // العملة الافتراضية (جنيه مصرى)
+    if (!(await db.settings.get('currency'))) {
+        await db.settings.put({ key: 'currency', value: 'EGP' });
+    }
+    // علامة أول تشغيل
+    if (!(await db.settings.get('firstRun'))) {
+        await db.settings.put({ key: 'firstRun', value: 'done' });
+    }
+    // الحد الأدنى للمخزن (شيكاير)
+    if (!(await db.settings.get('lowStockThreshold'))) {
+        await db.settings.put({ key: 'lowStockThreshold', value: '10' });
+    }
+}
+
+// ترحيل البيانات من localStorage القديم
 async function migrateFromLocalStorage() {
     const old = localStorage.getItem('akh_v9');
     if (!old) return;
@@ -43,4 +64,4 @@ async function migrateFromLocalStorage() {
     if (data.agenda) await db.agenda.bulkPut(data.agenda);
     localStorage.removeItem('akh_v9');
     console.log('تم ترحيل البيانات');
-}
+        } 
