@@ -12,5 +12,10 @@ if ('serviceWorker' in navigator) {
                 }
             });
         });
+        // إشعار هادئ عند التفعيل الأول
+        if (reg.active && !localStorage.getItem('sw_installed_v2')) {
+            Utils.toast('✨ التطبيق يعمل الآن بدون إنترنت', 'success');
+            localStorage.setItem('sw_installed_v2', '1');
+        }
     }).catch(err => console.log('SW registration failed:', err));
 }
