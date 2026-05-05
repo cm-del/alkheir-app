@@ -1,6 +1,23 @@
 'use strict';
 const Analytics = {
+    _cache: new Map(),
+
+    // مسح كاش دفعة واحدة
+    invalidateBatch(batchId) {
+        this._cache.delete('predictWeight_' + batchId);
+        this._cache.delete('costPerKg_' + batchId);
+        this._cache.delete('mortality_' + batchId);
+    },
+
+    // مسح الكاش بالكامل
+    clearCache() {
+        this._cache.clear();
+    },
+
     async predictWeight(batchId) {
+        const cacheKey = 'predictWeight_' + batchId;
+        if (this._cache.has(cacheKey)) return this._cache.get(cacheKey);
+
         const b = await db.batches.get(batchId);
         if (!b) return null;
         const weights = await db.weights.where('batchId').equals(batchId).toArray();
@@ -14,8 +31,11 @@ const Analytics = {
         const sumX2 = ages.reduce((s,x) => s + x*x, 0);
         const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
         const intercept = (sumY - slope*sumX) / n;
-        return { slope, intercept, predict(age) { return +(intercept + slope*age).toFixed(3); } };
+        const result = { slope, intercept, predict(age) { return +(intercept + slope*age).toFixed(3); } };
+        this._cache.set(cacheKey, result);
+        return result;
     },
+
     async predictBestSellDate(batchId, targetWeight = 2.5) {
         const model = await this.predictWeight(batchId);
         if (!model || model.slope <= 0) return null;
@@ -27,7 +47,11 @@ const Analytics = {
         targetDate.setDate(targetDate.getDate() + (daysNeeded - currentAge));
         return { date: targetDate.toISOString().split('T')[0], daysNeeded, model };
     },
+
     async costPerKg(batchId) {
+        const cacheKey = 'costPerKg_' + batchId;
+        if (this._cache.has(cacheKey)) return this._cache.get(cacheKey);
+
         const b = await db.batches.get(batchId);
         if (!b) return null;
         const feedKg = (await db.feed.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s+x.qty,0);
@@ -40,25 +64,33 @@ const Analytics = {
         const totalCost = chickCost + totalFeedCost + expenses;
         const totalSales = (await db.sales.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s+x.total,0);
         const totalWeightSold = (await db.sales.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s + (x.count * x.weight),0);
-        return {
+        const result = {
             cost: totalCost,
             weightSold: totalWeightSold,
             costPerKg: totalWeightSold ? totalCost / totalWeightSold : 0,
             revenue: totalSales,
             profit: totalSales - totalCost
         };
+        this._cache.set(cacheKey, result);
+        return result;
     },
+
     async getMortalityRate(batchId) {
+        const cacheKey = 'mortality_' + batchId;
+        if (this._cache.has(cacheKey)) return this._cache.get(cacheKey);
+
         const batch = await db.batches.get(batchId);
         if (!batch) return null;
         const startCount = batch.startCount || batch.count;
         if (!startCount || startCount <= 0) return null;
         const totalDeaths = (await db.deaths.where('batchId').equals(batchId).toArray()).reduce((s,d)=>s+d.count,0);
-        return {
+        const result = {
             startCount,
             totalDeaths,
             percentage: +((totalDeaths / startCount) * 100).toFixed(2),
             alive: startCount - totalDeaths
         };
+        this._cache.set(cacheKey, result);
+        return result;
     }
-}; 
+};
