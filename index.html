@@ -7,22 +7,19 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐔</text></svg>">
     <link rel="manifest" href="manifest.json">
     
-    <!-- تحميل الخطوط مرة واحدة فقط مع swap لتجنب FOIT -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/print.css" media="print">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
-    <!-- وسوم Open Graph للمشاركة -->
     <meta property="og:title" content="الخير للدواجن - النسخة المتقدمة">
     <meta property="og:description" content="منصة متطورة لإدارة مزارع الدواجن">
     <meta property="og:image" content="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🐔</text></svg>">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#00e272">
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <!-- مافيش تحميل مكتبات رسوم بيانية هنا - هتتحمل عند الطلب -->
 </head>
 <body>
 
@@ -39,7 +36,6 @@
             <div><div class="app-name">الخير للدواجن</div><div class="app-sub" id="hdrDate"></div></div>
         </div>
         <div class="hdr-r">
-            <!-- زر تثبيت التطبيق PWA (مخفي بإفتراضي) -->
             <button id="installBtn" class="chip" style="display:none;background:var(--a);color:#050e08;border:none;font-weight:600;">📲 تثبيت</button>
             <div class="chip" onclick="Modals.showWeather()">🌡 <span id="hdrTemp">--°</span></div>
             <div class="chip" onclick="Modals.showExport()">📤</div>
@@ -99,7 +95,6 @@
         <button class="ni" onclick="App.showPage('more',this)"><span class="ni-i">➕</span>المزيد</button>
     </nav>
 
-    <!-- رسالة noscript -->
     <noscript>
         <div style="background:#ff3b5c;color:white;padding:12px;text-align:center;font-weight:bold;position:fixed;bottom:0;left:0;right:0;z-index:9999;">
             ⚠️ التطبيق يحتاج إلى تفعيل JavaScript ليعمل.
@@ -155,4 +150,4 @@
         });
     </script>
 </body>
-        </html> 
+</html>
