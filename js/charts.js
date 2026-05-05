@@ -83,5 +83,37 @@ const Charts = {
                 }
             }
         });
+    },
+    renderMortalityChart(canvasId, deathsData) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+        const sorted = deathsData.sort((a, b) => a.date.localeCompare(b.date));
+        const labels = sorted.map(d => d.date.slice(5));
+        const data = sorted.map(d => d.count || 0);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'نفوق يومي',
+                    data,
+                    borderColor: '#ff3b5c',
+                    backgroundColor: 'rgba(255,59,92,0.08)',
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#dff5e8' } } },
+                scales: {
+                    x: { ticks: { color: '#4a7a5e' }, grid: { color: '#1c3424' } },
+                    y: { ticks: { color: '#4a7a5e' }, grid: { color: '#1c3424' }, beginAtZero: true }
+                }
+            }
+        });
     }
-};
+}; 
