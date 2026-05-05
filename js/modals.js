@@ -399,7 +399,6 @@ const Modals = {
                         note,
                         done: false
                     });
-                    // طلب إذن الإشعارات وجدولة تنبيه
                     if (await Notifications.requestPermission()) {
                         Notifications.scheduleAt('تذكير: ' + note, date, '08:00');
                     }
@@ -449,6 +448,37 @@ const Modals = {
                 body.innerHTML = `<button class="btn btn-g" id="backup-export">📤 تصدير JSON</button>
                     <label class="btn btn-o" style="margin-top:6px">📥 استيراد JSON <input type="file" id="backup-file" accept=".json" style="display:none" onchange="Export.restoreJSON(this.files[0])"></label>`;
                 document.getElementById('backup-export').onclick = () => { Export.backupJSON(); Modals.close(id); };
+                break;
+
+            case 'batchReport':
+                title.textContent = '📋 ملخص دفعة';
+                const batchId = param1;
+                const b = await db.batches.get(batchId);
+                if (!b) { Modals.close(id); return Utils.toast('الدفعة غير موجودة', 'error'); }
+                const costData = await Analytics.costPerKg(batchId);
+                const mortality = await Analytics.getMortalityRate(batchId);
+                const prediction = await Analytics.predictBestSellDate(batchId, b.target);
+                const weights = await db.weights.where('batchId').equals(batchId).toArray();
+                const lw = weights.length ? weights[weights.length - 1].weight : 0;
+                const fKg = (await db.feed.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s+x.qty,0);
+                const totalSales = (await db.sales.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s+x.total,0);
+                const totalExpenses = (await db.expenses.where('batchId').equals(batchId).toArray()).reduce((s,x)=>s+x.amount,0);
+                body.innerHTML = `
+                    <div style="font-size:1.1rem;font-weight:900;color:var(--a);margin-bottom:10px">🐔 ${b.name}</div>
+                    <div class="g2">
+                        <div class="fg"><label>العمر</label><span>${Utils.dAge(b.date)} يوم</span></div>
+                        <div class="fg"><label>العدد الحالي</label><span>${b.count} / ${b.startCount}</span></div>
+                        <div class="fg"><label>آخر وزن</label><span>${lw} كجم</span></div>
+                        <div class="fg"><label>إجمالي العلف</label><span>${fKg} كجم</span></div>
+                        <div class="fg"><label>نسبة النفوق</label><span>${mortality ? mortality.percentage+'%' : '-'}</span></div>
+                        <div class="fg"><label>المبيعات</label><span>${totalSales} ج.م</span></div>
+                        <div class="fg"><label>المصاريف</label><span>${totalExpenses} ج.م</span></div>
+                        <div class="fg"><label>تكلفة الكيلو</label><span>${costData ? costData.costPerKg.toFixed(2)+' ج.م' : '-'}</span></div>
+                    </div>
+                    ${costData ? `<div class="sep"></div><div class="rb"><span>الربح</span><span class="${costData.profit>=0?'pp':'pn'}">${costData.profit.toFixed(0)} ج.م</span></div>` : ''}
+                    ${prediction ? `<div class="ai alert" style="margin-top:12px">📈 البيع المتوقع: ${prediction.date} (${prediction.daysNeeded} يوم)</div>` : ''}
+                    <button class="btn btn-g" style="margin-top:12px" onclick="Export.batchReport('${batchId}')">📤 تصدير تقرير TXT</button>
+                `;
                 break;
 
             default: break;
