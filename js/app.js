@@ -3,17 +3,45 @@ const App = {
     currentFarm: null,
     currentHangar: null,
     currentPage: 'dash',
+    stateKey: 'alkheir_app_state_v1',
+
+    saveState() {
+        try {
+            localStorage.setItem(this.stateKey, JSON.stringify({
+                currentFarm: this.currentFarm,
+                currentHangar: this.currentHangar,
+                currentPage: this.currentPage
+            }));
+        } catch (_) {}
+    },
+    async restoreState() {
+        try {
+            const raw = localStorage.getItem(this.stateKey);
+            if (!raw) return;
+            const state = JSON.parse(raw);
+            if (state.currentFarm && await db.farms.get(state.currentFarm)) {
+                this.currentFarm = state.currentFarm;
+            }
+            if (state.currentHangar && await db.hangars.get(state.currentHangar)) {
+                this.currentHangar = state.currentHangar;
+            }
+            if (state.currentPage && document.getElementById('page-' + state.currentPage)) {
+                this.currentPage = state.currentPage;
+            }
+        } catch (_) {}
+    },
     async init() {
         await migrateFromLocalStorage();
         const unlocked = await UI.checkLock();
         if (!unlocked) return;
         document.getElementById('hdrDate').textContent = new Date().toLocaleDateString('ar-EG', {weekday:'long', day:'numeric', month:'long'});
-        if ((await db.farms.count()) > 0) {
+        await this.restoreState();
+        if (!App.currentFarm && (await db.farms.count()) > 0) {
             App.currentFarm = (await db.farms.toArray())[0].id;
         }
         await UI.renderFarmBar();
         await UI.renderHangarBar();
-        await this.showPage('dash');
+        await this.showPage(this.currentPage);
         Weather.load().then(w => { if (w) document.getElementById('hdrTemp').textContent = w.temp + '°'; });
     },
     async showPage(id, btn) {
@@ -25,6 +53,7 @@ const App = {
         if (btn) btn.classList.add('active');
         const hangarBar = document.getElementById('hangarBar');
         hangarBar.style.display = ['data','temp','ref','more'].includes(id) ? 'flex' : 'none';
+        this.saveState();
         switch(id) {
             case 'dash': await UI.renderDash(); break;
             case 'hangars': await UI.renderFarmTree(); break;
@@ -43,10 +72,12 @@ const App = {
         this.currentHangar = null;
         UI.renderFarmBar();
         UI.renderHangarBar();
+        this.saveState();
     },
     setHangar(id) {
         this.currentHangar = id;
         UI.renderHangarBar();
+        this.saveState();
     },
     async getBatchIds() {
         let batches;
