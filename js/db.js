@@ -44,7 +44,7 @@ const Validator = {
     // نوع كل حقل (للتأكد من القيم)
     types: {
         farms: { id: 'string', name: 'string', loc: 'string' },
-        hangars: { id: 'string', name: 'string', farmId: 'string', cap: 'number', area: 'number', windows: 'number', fans: 'number', fanCap: 'number' },
+        hangars: { id: 'string', name: 'string', farmId: 'string', cap: 'number', area: 'number', windows: 'number', fans: 'number', fanCap: 'number', feeders: 'number', drinkers: 'number', feedPlates: 'number' },
         batches: { id: 'string', name: 'string', hangarId: 'string', count: 'number', startCount: 'number', date: 'string', price: 'number', target: 'number', active: 'boolean' },
         weights: { id: 'string', batchId: 'string', weight: 'number', date: 'string', note: 'string' },
         feed: { id: 'string', batchId: 'string', bags: 'number', qty: 'number', date: 'string', type: 'string', cost: 'number' },

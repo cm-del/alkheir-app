@@ -59,7 +59,7 @@ const Modals = {
             case 'addHangar':
                 title.textContent = '🏠 عنبر جديد';
                 const hangarFarmId = param2 || App.currentFarm;
-                body.innerHTML = `<div class="fg"><label>الاسم *</label><input id="hn-name"></div><div class="g2"><div class="fg"><label>السعة</label><input type="number" id="hn-cap"></div><div class="fg"><label>المساحة م²</label><input type="number" id="hn-area"></div></div><div class="g2"><div class="fg"><label>شبابيك</label><input type="number" id="hn-win"></div><div class="fg"><label>شفاطات</label><input type="number" id="hn-fans"></div></div><div class="fg"><label>قدرة الشفاطة م³/س</label><input type="number" id="hn-fcap"></div><button class="btn btn-g" id="btn-${id}">✅ إضافة</button>`;
+                body.innerHTML = `<div class="fg"><label>الاسم *</label><input id="hn-name"></div><div class="g2"><div class="fg"><label>السعة</label><input type="number" id="hn-cap"></div><div class="fg"><label>المساحة م²</label><input type="number" id="hn-area"></div></div><div class="g2"><div class="fg"><label>شبابيك</label><input type="number" id="hn-win"></div><div class="fg"><label>شفاطات</label><input type="number" id="hn-fans"></div></div><div class="fg"><label>قدرة الشفاطة م³/س</label><input type="number" id="hn-fcap"></div><div class="g2"><div class="fg"><label>عدد العلفات</label><input type="number" id="hn-feeders"></div><div class="fg"><label>عدد السقايات</label><input type="number" id="hn-drinkers"></div></div><div class="fg"><label>عدد أطباق العلف</label><input type="number" id="hn-feedPlates"></div><button class="btn btn-g" id="btn-${id}">✅ إضافة</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     const name = document.getElementById('hn-name').value.trim();
                     if (!name) return Utils.toast('أدخل الاسم', 'warning');
@@ -69,7 +69,10 @@ const Modals = {
                         area: +document.getElementById('hn-area').value || 0,
                         windows: +document.getElementById('hn-win').value || 0,
                         fans: +document.getElementById('hn-fans').value || 0,
-                        fanCap: +document.getElementById('hn-fcap').value || 0
+                        fanCap: +document.getElementById('hn-fcap').value || 0,
+                        feeders: +document.getElementById('hn-feeders').value || 0,
+                        drinkers: +document.getElementById('hn-drinkers').value || 0,
+                        feedPlates: +document.getElementById('hn-feedPlates').value || 0
                     });
                     Modals.close(id); UI.renderFarmTree(); UI.renderHangarBar();
                 };
@@ -79,7 +82,7 @@ const Modals = {
                 title.textContent = '✏️ تعديل عنبر';
                 const hangar = await db.hangars.get(param1);
                 if (!hangar) return Modals.close(id);
-                body.innerHTML = `<input type="hidden" id="eh-id" value="${hangar.id}"><div class="fg"><label>الاسم</label><input id="eh-name" value="${hangar.name}"></div><div class="g2"><div class="fg"><label>السعة</label><input type="number" id="eh-cap" value="${hangar.cap||''}"></div><div class="fg"><label>المساحة</label><input type="number" id="eh-area" value="${hangar.area||''}"></div></div><div class="g2"><div class="fg"><label>شبابيك</label><input type="number" id="eh-win" value="${hangar.windows||''}"></div><div class="fg"><label>شفاطات</label><input type="number" id="eh-fans" value="${hangar.fans||''}"></div></div><div class="fg"><label>قدرة الشفاطة</label><input type="number" id="eh-fcap" value="${hangar.fanCap||''}"></div><button class="btn btn-g" id="btn-${id}">💾 حفظ</button><button class="btn btn-r" style="margin-top:6px" id="btn-del-${id}">🗑 حذف</button>`;
+                body.innerHTML = `<input type="hidden" id="eh-id" value="${hangar.id}"><div class="fg"><label>الاسم</label><input id="eh-name" value="${hangar.name}"></div><div class="g2"><div class="fg"><label>السعة</label><input type="number" id="eh-cap" value="${hangar.cap||''}"></div><div class="fg"><label>المساحة</label><input type="number" id="eh-area" value="${hangar.area||''}"></div></div><div class="g2"><div class="fg"><label>شبابيك</label><input type="number" id="eh-win" value="${hangar.windows||''}"></div><div class="fg"><label>شفاطات</label><input type="number" id="eh-fans" value="${hangar.fans||''}"></div></div><div class="fg"><label>قدرة الشفاطة</label><input type="number" id="eh-fcap" value="${hangar.fanCap||''}"></div><div class="g2"><div class="fg"><label>عدد العلفات</label><input type="number" id="eh-feeders" value="${hangar.feeders||''}"></div><div class="fg"><label>عدد السقايات</label><input type="number" id="eh-drinkers" value="${hangar.drinkers||''}"></div></div><div class="fg"><label>عدد أطباق العلف</label><input type="number" id="eh-feedPlates" value="${hangar.feedPlates||''}"></div><button class="btn btn-g" id="btn-${id}">💾 حفظ</button><button class="btn btn-r" style="margin-top:6px" id="btn-del-${id}">🗑 حذف</button>`;
                 document.getElementById(`btn-${id}`).onclick = async () => {
                     hangar.name = document.getElementById('eh-name').value.trim();
                     hangar.cap = +document.getElementById('eh-cap').value || 0;
@@ -87,6 +90,9 @@ const Modals = {
                     hangar.windows = +document.getElementById('eh-win').value || 0;
                     hangar.fans = +document.getElementById('eh-fans').value || 0;
                     hangar.fanCap = +document.getElementById('eh-fcap').value || 0;
+                    hangar.feeders = +document.getElementById('eh-feeders').value || 0;
+                    hangar.drinkers = +document.getElementById('eh-drinkers').value || 0;
+                    hangar.feedPlates = +document.getElementById('eh-feedPlates').value || 0;
                     await db.hangars.put(hangar);
                     Modals.close(id); UI.renderFarmTree();
                 };
