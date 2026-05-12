@@ -17,17 +17,17 @@
     <meta property="og:description" content="منصة متطورة لإدارة مزارع الدواجن">
     <meta property="og:image" content="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🐔</text></svg>">
     <meta property="og:type" content="website">
-    <meta name="theme-color" content="#00e272">
+    <meta name="theme-color" content="#b79c74">
     
     <!-- مافيش تحميل مكتبات رسوم بيانية هنا - هتتحمل عند الطلب -->
 </head>
 <body>
 
     <!-- شاشة البداية Splash Screen -->
-    <div id="splashScreen" style="position:fixed;inset:0;background:#070f0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity 0.6s ease;">
+    <div id="splashScreen" style="position:fixed;inset:0;background:#131417;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity 0.6s ease;">
         <div style="font-size:4rem;margin-bottom:1rem;">🐔</div>
-        <h2 style="color:#00e272;font-family:'Tajawal',sans-serif;">الخير للدواجن</h2>
-        <p style="color:#4a7a5e;margin-top:0.5rem;">جارٍ التحميل...</p>
+        <h2 style="color:#b79c74;font-family:'Tajawal',sans-serif;">الخير للدواجن</h2>
+        <p style="color:#a79f93;margin-top:0.5rem;">جارٍ التحميل...</p>
     </div>
 
     <header class="hdr">
@@ -36,7 +36,7 @@
             <div><div class="app-name">الخير للدواجن</div><div class="app-sub" id="hdrDate"></div></div>
         </div>
         <div class="hdr-r">
-            <button id="installBtn" class="chip" style="display:none;background:var(--a);color:#050e08;border:none;font-weight:600;">📲 تثبيت</button>
+            <button id="installBtn" class="chip" style="display:none;background:var(--a);color:#17181b;border:none;font-weight:600;">📲 تثبيت</button>
             <div class="chip" onclick="Modals.showWeather()">🌡 <span id="hdrTemp">--°</span></div>
             <div class="chip" onclick="Modals.showExport()">📤</div>
             <div class="chip" onclick="UI.toggleLock()">🔒</div>

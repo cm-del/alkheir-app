@@ -1,20 +1,20 @@
 :root {
-    --bg: #070f0a;
-    --surface: #0e1f14;
-    --card: #131f18;
-    --card2: #19291f;
-    --a: #00e272;
-    --a2: #ffb703;
-    --a3: #38b6ff;
-    --danger: #ff3b5c;
+    --bg: #131417;
+    --surface: #1b1d21;
+    --card: #22252a;
+    --card2: #2a2e34;
+    --a: #b79c74;
+    --a2: #c7a569;
+    --a3: #8ea4b8;
+    --danger: #b45a5a;
     --purple: #b57bee;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --info: #0ea5e9;
+    --success: #7ea087;
+    --warning: #b8975f;
+    --info: #7f98ad;
     --secondary: #6366f1;
-    --text: #dff5e8;
-    --muted: #4a7a5e;
-    --border: #1c3424;
+    --text: #ece6dc;
+    --muted: #a79f93;
+    --border: #363a41;
     --r: 14px;
     --rs: 10px;
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
@@ -71,7 +71,7 @@ body {
                       radial-gradient(circle at 80% 70%, rgba(56,182,255,0.03) 0%, transparent 30%),
                       radial-gradient(circle at 50% 90%, rgba(255,183,3,0.02) 0%, transparent 30%);
     background-attachment: fixed;
-    animation: bgShift 12s ease-in-out infinite alternate;
+    animation: none;
 }
 
 @keyframes bgShift {
@@ -96,14 +96,14 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #003d1e, #005a2e);
-    border: 1.5px solid rgba(0, 226, 114, .5);
+    background: linear-gradient(135deg, #3a3d44, #2b2d32);
+    border: 1.5px solid rgba(183, 156, 116, .45);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 22px;
     flex-shrink: 0;
-    box-shadow: 0 0 14px rgba(0, 226, 114, .2);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, .25);
 }
 
 .app-name {
@@ -274,7 +274,7 @@ body {
 
 .ni.active {
     color: var(--a);
-    text-shadow: 0 0 8px rgba(0,226,114,0.5);
+    text-shadow: none;
 }
 
 .ni-i {
@@ -460,28 +460,28 @@ body {
 }
 
 .btn-g {
-    background: linear-gradient(135deg, #10b981, #059669);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    color: #050e08;
+    background: linear-gradient(135deg, #b79c74, #9d835e);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    color: #17181b;
 }
 
 .btn-r {
-    background: linear-gradient(135deg, #ff3b5c, #b0122a);
+    background: linear-gradient(135deg, #b77070, #8d4f4f);
     color: #fff;
 }
 
 .btn-o {
-    background: linear-gradient(135deg, #ffb703, #d97f00);
-    color: #050e08;
+    background: linear-gradient(135deg, #c3a06a, #a88958);
+    color: #1b1c1f;
 }
 
 .btn-b {
-    background: linear-gradient(135deg, #38b6ff, #0070bb);
+    background: linear-gradient(135deg, #8ea4b8, #6e8193);
     color: #fff;
 }
 
 .btn-p {
-    background: linear-gradient(135deg, #b57bee, #7b2db5);
+    background: linear-gradient(135deg, #9887a8, #7c6f89);
     color: #fff;
 }
 
