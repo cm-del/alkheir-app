@@ -369,7 +369,7 @@ const UI = {
             for (const h of hs) {
                 const acts = await db.batches.where('hangarId').equals(h.id).and(b => b.active).toArray();
                 const birds = acts.reduce((s, b) => s + b.count, 0);
-                html += `<div class="hi"><div class="rb"><div><b>🏠 ${h.name}</b><br><small>${acts.length} دفعة · ${Utils.fmt(birds)} طير</small></div><div><button class="btn btn-sm btn-outline" onclick="Modals.open('addBatch', null, '${h.id}')">+ دفعة</button><button class="ebtn" onclick="Modals.open('editHangar', '${h.id}')">✏️</button></div></div></div>`;
+                html += `<div class="hi"><div class="rb"><div><b>🏠 ${h.name}</b><br><small>${acts.length} دفعة · ${Utils.fmt(birds)} طير</small><br><small>🌾 ${h.feeders||0} علفة · 💧 ${h.drinkers||0} سقاية · 🥣 ${h.feedPlates||0} طبق</small></div><div><button class="btn btn-sm btn-outline" onclick="Modals.open('addBatch', null, '${h.id}')">+ دفعة</button><button class="ebtn" onclick="Modals.open('editHangar', '${h.id}')">✏️</button></div></div></div>`;
             }
             html += `</div>`;
         }
