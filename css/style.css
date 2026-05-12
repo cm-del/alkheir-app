@@ -1106,4 +1106,101 @@ tr:last-child td {
 }
 .stock.low {
     animation: pulse-warn 2s infinite;
-        } 
+}
+
+/* تبسيط وتحسين الواجهة للموبايل */
+@media (max-width: 640px) {
+    :root {
+        --r: 12px;
+        --rs: 9px;
+    }
+
+    body {
+        background: var(--bg);
+    }
+
+    .hdr {
+        padding: 9px 10px;
+        box-shadow: none;
+    }
+
+    .logo-box {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        font-size: 18px;
+        box-shadow: none;
+    }
+
+    .app-name {
+        font-size: .88rem;
+    }
+
+    .chip {
+        padding: 5px 8px;
+        border-radius: 14px;
+    }
+
+    .fbar {
+        top: 53px;
+        padding: 6px 10px;
+        background: transparent;
+        border-bottom: none;
+    }
+
+    .fp,
+    .hp,
+    .it {
+        border-radius: 999px;
+    }
+
+    .page {
+        padding: 10px 10px 92px;
+    }
+
+    .card,
+    .stat,
+    .sc,
+    .hi,
+    .bc,
+    .stock,
+    .fcr,
+    .wx,
+    .cmp-c {
+        box-shadow: none;
+        background: color-mix(in srgb, var(--card) 92%, #000 8%);
+    }
+
+    .sg,
+    .g2,
+    .g3 {
+        gap: 7px;
+    }
+
+    .bnav {
+        display: flex;
+        overflow-x: auto;
+        justify-content: flex-start;
+        gap: 4px;
+        padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
+        background: var(--surface);
+        box-shadow: none;
+        scrollbar-width: none;
+    }
+
+    .bnav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .ni {
+        min-width: 68px;
+        padding: 6px 4px;
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    .ni.active {
+        background: rgba(183, 156, 116, .12);
+        border: 1px solid rgba(183, 156, 116, .35);
+    }
+}
